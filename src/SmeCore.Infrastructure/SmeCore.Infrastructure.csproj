@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.11" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmeCore.Domain\SmeCore.Domain.csproj" />
+  </ItemGroup>
+
+  <!-- Alguns auxiliares (formatação e escape do CSV, por exemplo) são internos por não
+       fazerem parte da API pública, mas têm testes próprios. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="SmeCore.Tests" />
+  </ItemGroup>
+
+  <!-- Dá acesso a IAuthorizationHandler, IMemoryCache e IHttpContextAccessor sem
+       arrastar pacotes individuais: são parte do framework partilhado do ASP.NET Core. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>
