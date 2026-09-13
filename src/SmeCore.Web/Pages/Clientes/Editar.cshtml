@@ -1,0 +1,188 @@
+@page "/clientes/{id:guid}/editar"
+@model SmeCore.Web.Pages.Clientes.EditarModel
+@{
+    ViewData["Titulo"] = Model.Novo ? "Novo cliente" : "Editar cliente";
+    ViewData["Subtitulo"] = Model.Numero.HasValue ? $"Cliente n.º {Model.Numero}" : null;
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>@(Model.Novo ? "Novo cliente" : "Editar cliente")</h1>
+        <p>Os campos marcados com <span class="obrigatorio">*</span> são obrigatórios.</p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="@(Model.Novo ? "/clientes" : $"/clientes/{Model.Id}")">
+            @Icones.Desenhar("regressar") Cancelar
+        </a>
+    </div>
+</div>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="mensagem mensagem--erro validation-summary-errors"></div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Identificação</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-3">
+                    <label asp-for="Dados.Tipo">Tipo de cliente</label>
+                    <select asp-for="Dados.Tipo">
+                        <option value="@((int)TipoCliente.Particular)">Particular</option>
+                        <option value="@((int)TipoCliente.Empresa)">Empresa</option>
+                    </select>
+                    <span class="campo__ajuda">As empresas podem ter pessoas de contacto.</span>
+                </div>
+
+                <div class="campo col-6">
+                    <label asp-for="Dados.Nome">Nome / Designação social <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.Nome" autofocus autocomplete="off" />
+                    <span asp-validation-for="Dados.Nome"></span>
+                </div>
+
+                <div class="campo col-3">
+                    <label asp-for="Dados.Nif">NIF</label>
+                    <input asp-for="Dados.Nif" inputmode="numeric" autocomplete="off" placeholder="123456789" />
+                    <span asp-validation-for="Dados.Nif"></span>
+                    <span class="campo__ajuda">9 dígitos. É validado o dígito de controlo.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Contactos</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-4">
+                    <label asp-for="Dados.Email">E-mail</label>
+                    <input asp-for="Dados.Email" type="email" autocomplete="off" />
+                    <span asp-validation-for="Dados.Email"></span>
+                </div>
+                <div class="campo col-4">
+                    <label asp-for="Dados.Telefone">Telefone</label>
+                    <input asp-for="Dados.Telefone" type="tel" autocomplete="off" />
+                    <span asp-validation-for="Dados.Telefone"></span>
+                </div>
+                <div class="campo col-4">
+                    <label asp-for="Dados.Telemovel">Telemóvel</label>
+                    <input asp-for="Dados.Telemovel" type="tel" autocomplete="off" />
+                    <span asp-validation-for="Dados.Telemovel"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Endereço</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-6">
+                    <label asp-for="Dados.Morada">Morada</label>
+                    <input asp-for="Dados.Morada" autocomplete="off" />
+                    <span asp-validation-for="Dados.Morada"></span>
+                </div>
+                <div class="campo col-2">
+                    <label asp-for="Dados.CodigoPostal">Código postal</label>
+                    <input asp-for="Dados.CodigoPostal" placeholder="0000-000" autocomplete="off" />
+                    <span asp-validation-for="Dados.CodigoPostal"></span>
+                </div>
+                <div class="campo col-2">
+                    <label asp-for="Dados.Localidade">Localidade</label>
+                    <input asp-for="Dados.Localidade" autocomplete="off" />
+                    <span asp-validation-for="Dados.Localidade"></span>
+                </div>
+                <div class="campo col-2">
+                    <label asp-for="Dados.Pais">País</label>
+                    <input asp-for="Dados.Pais" autocomplete="off" />
+                    <span asp-validation-for="Dados.Pais"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho">
+            <h2>Pessoas de contacto</h2>
+            <div class="direita pequeno tenue">Deixe em branco as linhas que não precisar.</div>
+        </div>
+        <div class="cartao__corpo">
+            <div class="tabela-envolvente">
+                <table class="tabela tabela--compacta">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nome</th>
+                            <th scope="col">Função</th>
+                            <th scope="col">E-mail</th>
+                            <th scope="col">Telefone</th>
+                            <th scope="col">Principal</th>
+                            <th scope="col">Remover</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Dados.Contactos.Count; i++)
+                        {
+                            var indice = i;
+                            <tr>
+                                <td>
+                                    <input type="hidden" asp-for="Dados.Contactos[indice].Id" />
+                                    <input asp-for="Dados.Contactos[indice].Nome" autocomplete="off" aria-label="Nome do contacto @(indice + 1)" />
+                                    <span asp-validation-for="Dados.Contactos[indice].Nome"></span>
+                                </td>
+                                <td><input asp-for="Dados.Contactos[indice].Funcao" autocomplete="off" aria-label="Função do contacto @(indice + 1)" /></td>
+                                <td>
+                                    <input asp-for="Dados.Contactos[indice].Email" type="email" autocomplete="off" aria-label="E-mail do contacto @(indice + 1)" />
+                                    <span asp-validation-for="Dados.Contactos[indice].Email"></span>
+                                </td>
+                                <td><input asp-for="Dados.Contactos[indice].Telefone" type="tel" autocomplete="off" aria-label="Telefone do contacto @(indice + 1)" /></td>
+                                <td class="centrado"><input asp-for="Dados.Contactos[indice].Principal" aria-label="Contacto principal" /></td>
+                                <td class="centrado">
+                                    @if (Model.Dados.Contactos[indice].Id is not null)
+                                    {
+                                        <input asp-for="Dados.Contactos[indice].Remover" aria-label="Remover este contacto" />
+                                    }
+                                    else
+                                    {
+                                        <span class="tenue">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Notas e estado</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-8">
+                    <label asp-for="Dados.Observacoes">Observações</label>
+                    <textarea asp-for="Dados.Observacoes" rows="4"></textarea>
+                    <span asp-validation-for="Dados.Observacoes"></span>
+                </div>
+                <div class="campo col-4">
+                    <label class="etiqueta">Estado</label>
+                    <label class="escolha">
+                        <input asp-for="Dados.Ativo" />
+                        <span>Cliente ativo</span>
+                    </label>
+                    <span class="campo__ajuda">
+                        Um cliente inativo continua visível e pesquisável, mas fica marcado como inativo nas listagens.
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="cartao__rodape">
+            <button type="submit" class="botao botao--primario">
+                @Icones.Desenhar("guardar") @(Model.Novo ? "Criar cliente" : "Guardar alterações")
+            </button>
+            <a class="botao botao--secundario" href="@(Model.Novo ? "/clientes" : $"/clientes/{Model.Id}")">Cancelar</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,49 @@
+@page "/entrar"
+@model SmeCore.Web.Pages.Conta.EntrarModel
+@{
+    ViewData["Titulo"] = "Iniciar sessão";
+    Layout = "_LayoutEntrada";
+}
+
+<h1>Iniciar sessão</h1>
+<p class="sub">Introduza os dados da sua conta para entrar na aplicação.</p>
+
+@if (Model.Mensagem is not null)
+{
+    <div class="mensagem mensagem--erro" role="alert">
+        @Icones.Desenhar("erro")
+        <div>@Model.Mensagem</div>
+    </div>
+}
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+    <div class="campo">
+        <label asp-for="Entrada.Email">E-mail</label>
+        <input asp-for="Entrada.Email" type="email" autocomplete="username" autofocus
+               placeholder="nome@empresa.pt" />
+        <span asp-validation-for="Entrada.Email"></span>
+    </div>
+
+    <div class="campo">
+        <label asp-for="Entrada.PalavraPasse">Palavra-passe</label>
+        <input asp-for="Entrada.PalavraPasse" type="password" autocomplete="current-password" />
+        <span asp-validation-for="Entrada.PalavraPasse"></span>
+    </div>
+
+    <label class="escolha" style="margin-bottom: 1.1rem;">
+        <input asp-for="Entrada.Memorizar" />
+        <span>Manter a sessão iniciada neste equipamento</span>
+    </label>
+
+    <button type="submit" class="botao botao--primario">Entrar</button>
+</form>
+
+<div class="entrada__rodape">
+    Esqueceu-se da palavra-passe? Peça a um administrador para a redefinir.
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

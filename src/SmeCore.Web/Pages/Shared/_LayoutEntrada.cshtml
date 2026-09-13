@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Titulo"] ?? "Iniciar sessão") · SmeCore</title>
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="icon" href="~/favicon.ico" />
+</head>
+<body>
+    <div class="entrada">
+        <div class="entrada__caixa">
+            <div class="entrada__marca">
+                <span class="lateral__logo">SC</span>
+                <div>
+                    <strong>SmeCore</strong>
+                    <small>Gestão de clientes e frota</small>
+                </div>
+            </div>
+
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,19 @@
+@page "/acesso-negado"
+@{
+    ViewData["Titulo"] = "Sem permissão";
+    Layout = "_LayoutEntrada";
+}
+
+<h1>Não tem permissão</h1>
+<p class="sub">
+    A sua conta não tem permissão para abrir esta área. Se precisar deste acesso,
+    peça a um administrador para o acrescentar ao seu perfil.
+</p>
+
+<div class="linha">
+    <a class="botao botao--primario" href="/">Voltar ao painel</a>
+    <form method="post" action="/sair">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="botao botao--secundario">Terminar sessão</button>
+    </form>
+</div>

@@ -1,0 +1,201 @@
+@page "/veiculos/{id:guid}"
+@model SmeCore.Web.Pages.Veiculos.DetalhesModel
+@inject IRelogio Relogio
+@{
+    ViewData["Titulo"] = Model.Veiculo.Matricula;
+    ViewData["Subtitulo"] = $"{Model.Veiculo.Marca} {Model.Veiculo.Modelo}";
+    var vencida = Model.Veiculo.ProximaInspecao is not null && Model.Veiculo.ProximaInspecao < Model.Hoje;
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1><span class="matricula" style="font-size: 1.25rem;">@Model.Veiculo.Matricula</span></h1>
+        <p>
+            @Model.Veiculo.Marca @Model.Veiculo.Modelo
+            @if (!string.IsNullOrWhiteSpace(Model.Veiculo.Versao))
+            {
+                <text>· @Model.Veiculo.Versao</text>
+            }
+            @if (Model.Veiculo.Eliminado)
+            {
+                <span class="selo selo--perigo">Eliminado</span>
+            }
+            else if (!Model.Veiculo.Ativo)
+            {
+                <span class="selo selo--neutro">Inativo</span>
+            }
+        </p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="/veiculos">@Icones.Desenhar("regressar") Voltar à lista</a>
+
+        @if (Model.PodeEditar && !Model.Veiculo.Eliminado)
+        {
+            <a class="botao botao--primario" href="/veiculos/@Model.Veiculo.Id/editar">@Icones.Desenhar("lapis") Editar</a>
+        }
+
+        @if (Model.PodeEliminar && !Model.Veiculo.Eliminado)
+        {
+            <form method="post" asp-page-handler="Eliminar" asp-route-id="@Model.Veiculo.Id"
+                  data-confirmar="Eliminar o veículo @Model.Veiculo.Matricula? O registo deixa de aparecer nas listagens mas fica no histórico.">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="botao botao--secundario">@Icones.Desenhar("lixo") Eliminar</button>
+            </form>
+        }
+
+        @if (Model.PodeEliminar && Model.Veiculo.Eliminado)
+        {
+            <form method="post" asp-page-handler="Reativar" asp-route-id="@Model.Veiculo.Id">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="botao botao--acento">@Icones.Desenhar("reativar") Reativar</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (Model.Veiculo.ProximaInspecao is not null)
+{
+    <div class="mensagem @(vencida ? "mensagem--erro" : Model.Veiculo.ProximaInspecao <= Model.Hoje.AddDays(30) ? "mensagem--aviso" : "mensagem--informacao")">
+        @Icones.Desenhar(vencida ? "aviso" : "calendario")
+        <div>
+            Próxima inspeção periódica a @Formatos.Data(Model.Veiculo.ProximaInspecao)
+            (@Formatos.PrazoRelativo(Model.Veiculo.ProximaInspecao, Model.Hoje)).
+        </div>
+    </div>
+}
+
+<nav class="separadores" aria-label="Secções da ficha">
+    <a href="/veiculos/@Model.Veiculo.Id" class="@(Model.Separador == "dados" ? "ativo" : "")">Dados</a>
+    @if (Model.PodeVerHistorico)
+    {
+        <a href="/veiculos/@Model.Veiculo.Id?ver=historico" class="@(Model.Separador == "historico" ? "ativo" : "")">Histórico</a>
+    }
+</nav>
+
+@if (Model.Separador == "dados")
+{
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Proprietário</h2></div>
+        <div class="cartao__corpo">
+            <div class="detalhe">
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Cliente</div>
+                    <div class="detalhe__valor detalhe__valor--grande">
+                        @if (Model.PodeVerClientes && Model.Veiculo.Cliente is not null)
+                        {
+                            <a href="/clientes/@Model.Veiculo.ClienteId">@Model.Veiculo.Cliente.Nome</a>
+                        }
+                        else
+                        {
+                            @(Model.Veiculo.Cliente?.Nome ?? "—")
+                        }
+                    </div>
+                </div>
+                @if (Model.Veiculo.Cliente is not null)
+                {
+                    <div class="detalhe__item">
+                        <div class="detalhe__rotulo">NIF</div>
+                        <div class="detalhe__valor mono">
+                            @(string.IsNullOrWhiteSpace(Model.Veiculo.Cliente.Nif) ? "—" : SmeCore.Domain.Validacao.Nif.Formatar(Model.Veiculo.Cliente.Nif))
+                        </div>
+                    </div>
+                    <div class="detalhe__item">
+                        <div class="detalhe__rotulo">Contacto</div>
+                        <div class="detalhe__valor">
+                            @Formatos.Texto(string.IsNullOrWhiteSpace(Model.Veiculo.Cliente.Telemovel)
+                                ? Model.Veiculo.Cliente.Telefone
+                                : Model.Veiculo.Cliente.Telemovel)
+                        </div>
+                    </div>
+                    <div class="detalhe__item">
+                        <div class="detalhe__rotulo">E-mail</div>
+                        <div class="detalhe__valor">@Formatos.Texto(Model.Veiculo.Cliente.Email)</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Características</h2></div>
+        <div class="cartao__corpo">
+            <div class="detalhe">
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Matrícula</div>
+                    <div class="detalhe__valor"><span class="matricula">@Model.Veiculo.Matricula</span></div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">VIN</div>
+                    <div class="detalhe__valor mono">@Formatos.Texto(Model.Veiculo.Vin)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Marca e modelo</div>
+                    <div class="detalhe__valor">@Model.Veiculo.Marca @Model.Veiculo.Modelo</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Versão</div>
+                    <div class="detalhe__valor">@Formatos.Texto(Model.Veiculo.Versao)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Ano</div>
+                    <div class="detalhe__valor">@(Model.Veiculo.Ano?.ToString() ?? "—")</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">1.ª matrícula</div>
+                    <div class="detalhe__valor">@Formatos.Data(Model.Veiculo.DataPrimeiraMatricula)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Combustível</div>
+                    <div class="detalhe__valor">@Formatos.Enumeracao(Model.Veiculo.Combustivel)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Caixa</div>
+                    <div class="detalhe__valor">@Formatos.Enumeracao(Model.Veiculo.Caixa)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Cilindrada</div>
+                    <div class="detalhe__valor">@(Model.Veiculo.Cilindrada.HasValue ? $"{Formatos.Inteiro(Model.Veiculo.Cilindrada)} cm³" : "—")</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Potência</div>
+                    <div class="detalhe__valor">@(Model.Veiculo.Potencia.HasValue ? $"{Model.Veiculo.Potencia} cv" : "—")</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Cor</div>
+                    <div class="detalhe__valor">@Formatos.Texto(Model.Veiculo.Cor)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Quilometragem</div>
+                    <div class="detalhe__valor">@Formatos.Quilometros(Model.Veiculo.Quilometragem)</div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Veiculo.Observacoes))
+            {
+                <div class="formulario__secao" style="margin-top: 1.2rem;">
+                    <div class="formulario__titulo">Observações</div>
+                    <p class="sem-margem">@Model.Veiculo.Observacoes</p>
+                </div>
+            }
+        </div>
+        <div class="cartao__rodape pequeno tenue">
+            Criado em @Formatos.DataHora(Model.Veiculo.CriadoEm, Relogio) por @Formatos.Texto(Model.Veiculo.CriadoPorNome)
+            @if (Model.Veiculo.AlteradoEm.HasValue)
+            {
+                <text>· última alteração em @Formatos.DataHora(Model.Veiculo.AlteradoEm, Relogio) por @Formatos.Texto(Model.Veiculo.AlteradoPorNome)</text>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="cartao">
+        <div class="cartao__cabecalho">
+            <h2>Histórico deste veículo</h2>
+            <div class="direita pequeno tenue">Últimas 200 alterações</div>
+        </div>
+        <div class="cartao__corpo">
+            <partial name="_Historico" model="Model.Historico" />
+        </div>
+    </div>
+}

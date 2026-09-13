@@ -1,0 +1,56 @@
+@model ModeloPaginacao
+@if (Model.TotalItens > 0)
+{
+    <div class="paginacao">
+        <span class="paginacao__resumo">@Model.Resumo()</span>
+
+        <div class="paginacao__tamanho">
+            <label for="tamanho-pagina">Por página</label>
+            <select id="tamanho-pagina" onchange="window.location = this.value;" aria-label="Registos por página">
+                @foreach (var tamanho in ParametrosListagem.TamanhosPagina)
+                {
+                    <option value="@Model.UrlTamanho(tamanho)" selected="@(tamanho == Model.TamanhoPagina)">@tamanho</option>
+                }
+            </select>
+        </div>
+
+        @if (Model.TotalPaginas > 1)
+        {
+            <nav class="paginacao__paginas" aria-label="Paginação">
+                @if (Model.Pagina > 1)
+                {
+                    <a href="@Model.Url(Model.Pagina - 1)" rel="prev" aria-label="Página anterior">‹</a>
+                }
+                else
+                {
+                    <span class="desativado" aria-hidden="true">‹</span>
+                }
+
+                @foreach (var pagina in Model.Janela())
+                {
+                    if (pagina is null)
+                    {
+                        <span class="desativado" aria-hidden="true">…</span>
+                    }
+                    else if (pagina == Model.Pagina)
+                    {
+                        <span class="atual" aria-current="page">@pagina</span>
+                    }
+                    else
+                    {
+                        <a href="@Model.Url(pagina.Value)">@pagina</a>
+                    }
+                }
+
+                @if (Model.Pagina < Model.TotalPaginas)
+                {
+                    <a href="@Model.Url(Model.Pagina + 1)" rel="next" aria-label="Página seguinte">›</a>
+                }
+                else
+                {
+                    <span class="desativado" aria-hidden="true">›</span>
+                }
+            </nav>
+        }
+    </div>
+}

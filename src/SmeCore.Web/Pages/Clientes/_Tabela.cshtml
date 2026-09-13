@@ -1,0 +1,150 @@
+@model SmeCore.Web.Pages.Clientes.IndexModel
+@inject IRelogio Relogio
+@{
+    var paginacao = ModeloPaginacao.De(Model.Pagina, Context.Request, "cliente", "clientes");
+}
+
+@if (Model.Pagina.TotalItens == 0)
+{
+    <div class="vazio">
+        @Icones.Desenhar("caixa-vazia", 38)
+        <h3>Nenhum cliente encontrado</h3>
+        @if (Model.Filtro.TemFiltrosAtivos)
+        {
+            <p>Não há clientes que correspondam aos filtros aplicados. Limpe os filtros para ver a lista completa.</p>
+            <a class="botao botao--secundario" href="/clientes">Limpar filtros</a>
+        }
+        else
+        {
+            <p>Ainda não existem clientes registados. Comece por criar o primeiro.</p>
+            @if (Model.PodeCriar)
+            {
+                <a class="botao botao--primario" href="/clientes/novo">@Icones.Desenhar("mais") Novo cliente</a>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="tabela-envolvente">
+        <table class="tabela">
+            <thead>
+                <tr>
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "numero", "N.º", "numerico")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "nome", "Nome")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "nif", "NIF")
+                    <th scope="col">Contacto</th>
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "localidade", "Localidade")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "veiculos", "Veículos", "numerico")
+                    <th scope="col">Estado</th>
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "alterado", "Última alteração")
+                    <th scope="col" class="acoes"><span class="so-leitores">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cliente in Model.Pagina.Itens)
+                {
+                    <tr>
+                        <td class="numerico secundario">@cliente.Numero</td>
+                        <td>
+                            <a class="principal" href="/clientes/@cliente.Id">@cliente.Nome</a>
+                            <div class="secundario">
+                                @if (cliente.Tipo == TipoCliente.Empresa)
+                                {
+                                    <span class="selo selo--neutro">@Icones.Desenhar("empresa", 12) Empresa</span>
+                                }
+                                else
+                                {
+                                    <span class="selo selo--neutro">Particular</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="mono">@(string.IsNullOrWhiteSpace(cliente.Nif) ? "—" : SmeCore.Domain.Validacao.Nif.Formatar(cliente.Nif))</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(cliente.Contacto))
+                            {
+                                <div>@cliente.Contacto</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(cliente.Email))
+                            {
+                                <div class="secundario">@cliente.Email</div>
+                            }
+                            @if (string.IsNullOrWhiteSpace(cliente.Contacto) && string.IsNullOrWhiteSpace(cliente.Email))
+                            {
+                                <span class="tenue">—</span>
+                            }
+                        </td>
+                        <td>
+                            @Formatos.Texto(cliente.Localidade)
+                            @if (!string.IsNullOrWhiteSpace(cliente.CodigoPostal))
+                            {
+                                <div class="secundario">@cliente.CodigoPostal</div>
+                            }
+                        </td>
+                        <td class="numerico">
+                            @if (cliente.TotalVeiculos > 0)
+                            {
+                                <a href="/veiculos?clienteId=@cliente.Id">@cliente.TotalVeiculos</a>
+                            }
+                            else
+                            {
+                                <span class="tenue">0</span>
+                            }
+                        </td>
+                        <td>
+                            @if (cliente.Eliminado)
+                            {
+                                <span class="selo selo--perigo">Eliminado</span>
+                            }
+                            else if (cliente.Ativo)
+                            {
+                                <span class="selo selo--sucesso">Ativo</span>
+                            }
+                            else
+                            {
+                                <span class="selo selo--neutro">Inativo</span>
+                            }
+                        </td>
+                        <td class="secundario">
+                            @Formatos.DataHora(cliente.AlteradoEm ?? cliente.CriadoEm, Relogio)
+                        </td>
+                        <td class="acoes">
+                            <a class="botao botao--fantasma botao--pequeno" href="/clientes/@cliente.Id" title="Ver ficha">
+                                @Icones.Desenhar("olho", 15)<span class="so-leitores">Ver ficha de @cliente.Nome</span>
+                            </a>
+                            @if (Model.PodeEditar && !cliente.Eliminado)
+                            {
+                                <a class="botao botao--fantasma botao--pequeno" href="/clientes/@cliente.Id/editar" title="Editar">
+                                    @Icones.Desenhar("lapis", 15)<span class="so-leitores">Editar @cliente.Nome</span>
+                                </a>
+                            }
+                            @if (Model.PodeEliminar && !cliente.Eliminado)
+                            {
+                                <form method="post" asp-page-handler="Eliminar" asp-route-id="@cliente.Id" style="display:inline"
+                                      data-confirmar="Eliminar o cliente @cliente.Nome? O registo deixa de aparecer nas listagens mas fica no histórico.">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="botao botao--fantasma botao--pequeno" title="Eliminar">
+                                        @Icones.Desenhar("lixo", 15)<span class="so-leitores">Eliminar @cliente.Nome</span>
+                                    </button>
+                                </form>
+                            }
+                            @if (Model.PodeEliminar && cliente.Eliminado)
+                            {
+                                <form method="post" asp-page-handler="Reativar" asp-route-id="@cliente.Id" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="botao botao--fantasma botao--pequeno" title="Reativar">
+                                        @Icones.Desenhar("reativar", 15)<span class="so-leitores">Reativar @cliente.Nome</span>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="cartao__rodape">
+        <partial name="_Paginacao" model="paginacao" />
+    </div>
+}

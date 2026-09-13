@@ -1,0 +1,10 @@
+@page "/sair"
+@model SmeCore.Web.Pages.Conta.SairModel
+@{
+    ViewData["Titulo"] = "Sessão terminada";
+    Layout = "_LayoutEntrada";
+}
+
+<h1>Sessão terminada</h1>
+<p class="sub">Fechou a sessão com segurança.</p>
+<a class="botao botao--primario" href="/entrar">Entrar novamente</a>

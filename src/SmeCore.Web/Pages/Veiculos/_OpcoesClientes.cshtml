@@ -1,0 +1,7 @@
+@model SmeCore.Web.Pages.Veiculos.EditarModel
+@* Opções da caixa de clientes. Devolvido isoladamente nos pedidos do HTMX. *@
+<option value="">— escolher cliente —</option>
+@foreach (var (id, texto) in Model.Clientes)
+{
+    <option value="@id" selected="@(Model.Dados.ClienteId == id)">@texto</option>
+}

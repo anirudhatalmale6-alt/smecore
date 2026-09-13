@@ -1,0 +1,138 @@
+@page "/utilizadores/{id:guid}/editar"
+@model SmeCore.Web.Pages.Utilizadores.EditarModel
+@inject IRelogio Relogio
+@{
+    ViewData["Titulo"] = Model.Novo ? "Novo utilizador" : "Editar utilizador";
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>@(Model.Novo ? "Novo utilizador" : "Editar utilizador")</h1>
+        <p>
+            As permissões vêm dos perfis atribuídos.
+            <a href="/perfis">Ver o que cada perfil permite</a>.
+        </p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="/utilizadores">@Icones.Desenhar("regressar") Cancelar</a>
+    </div>
+</div>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="mensagem mensagem--erro validation-summary-errors"></div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Dados da conta</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-6">
+                    <label asp-for="Dados.NomeCompleto">Nome completo <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.NomeCompleto" autofocus autocomplete="off" />
+                    <span asp-validation-for="Dados.NomeCompleto"></span>
+                </div>
+                <div class="campo col-6">
+                    <label asp-for="Dados.Email">E-mail <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.Email" type="email" autocomplete="off" />
+                    <span asp-validation-for="Dados.Email"></span>
+                    <span class="campo__ajuda">É também o nome de utilizador usado para entrar.</span>
+                </div>
+                <div class="campo col-4">
+                    <label asp-for="Dados.Cargo">Cargo</label>
+                    <input asp-for="Dados.Cargo" autocomplete="off" placeholder="Receção, Oficina, Administração…" />
+                    <span asp-validation-for="Dados.Cargo"></span>
+                </div>
+                <div class="campo col-4">
+                    <label asp-for="Dados.Telefone">Telefone</label>
+                    <input asp-for="Dados.Telefone" type="tel" autocomplete="off" />
+                    <span asp-validation-for="Dados.Telefone"></span>
+                </div>
+                <div class="campo col-4">
+                    <label class="etiqueta">Estado</label>
+                    <label class="escolha">
+                        <input asp-for="Dados.Ativo" />
+                        <span>Conta ativa</span>
+                    </label>
+                    <span class="campo__ajuda">Uma conta desativada não consegue iniciar sessão, mas mantém o histórico.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Perfis</h2></div>
+        <div class="cartao__corpo">
+            <div class="grupo-escolhas">
+                @foreach (var perfil in Model.PerfisDisponiveis)
+                {
+                    <label class="escolha">
+                        <input type="checkbox" name="Dados.Perfis" value="@perfil.Name"
+                               checked="@Model.Dados.Perfis.Contains(perfil.Name!)" />
+                        <span>
+                            @perfil.Name
+                            @if (!string.IsNullOrWhiteSpace(perfil.Descricao))
+                            {
+                                <small class="tenue">@perfil.Descricao</small>
+                            }
+                        </span>
+                    </label>
+                }
+            </div>
+            @if (Model.PerfisDisponiveis.Count == 0)
+            {
+                <p class="suave sem-margem">Ainda não existem perfis. <a href="/perfis/novo">Criar um perfil</a>.</p>
+            }
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho">
+            <h2>Palavra-passe</h2>
+            @if (!Model.Novo)
+            {
+                <div class="direita pequeno tenue">Deixe em branco para manter a palavra-passe atual.</div>
+            }
+        </div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-4">
+                    <label asp-for="Dados.PalavraPasse">
+                        Palavra-passe @if (Model.Novo) { <span class="obrigatorio">*</span> }
+                    </label>
+                    <input asp-for="Dados.PalavraPasse" type="password" autocomplete="new-password" />
+                    <span asp-validation-for="Dados.PalavraPasse"></span>
+                    <span class="campo__ajuda">Mínimo 10 caracteres, com maiúsculas, minúsculas e números.</span>
+                </div>
+                <div class="campo col-4">
+                    <label asp-for="Dados.ConfirmarPalavraPasse">Confirmar palavra-passe</label>
+                    <input asp-for="Dados.ConfirmarPalavraPasse" type="password" autocomplete="new-password" />
+                    <span asp-validation-for="Dados.ConfirmarPalavraPasse"></span>
+                </div>
+                <div class="campo col-4">
+                    <label class="etiqueta">Primeiro acesso</label>
+                    <label class="escolha">
+                        <input asp-for="Dados.ObrigarAlteracao" />
+                        <span>Obrigar a definir uma nova palavra-passe ao entrar</span>
+                    </label>
+                </div>
+            </div>
+
+            @if (!Model.Novo)
+            {
+                <p class="pequeno tenue" style="margin-top: .9rem;">
+                    Último acesso:
+                    @(Model.UltimoAcesso.HasValue ? Formatos.DataHora(Model.UltimoAcesso, Relogio) : "nunca entrou")
+                </p>
+            }
+        </div>
+        <div class="cartao__rodape">
+            <button type="submit" class="botao botao--primario">
+                @Icones.Desenhar("guardar") @(Model.Novo ? "Criar utilizador" : "Guardar alterações")
+            </button>
+            <a class="botao botao--secundario" href="/utilizadores">Cancelar</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

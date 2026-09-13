@@ -1,0 +1,123 @@
+@model SmeCore.Web.Pages.Veiculos.IndexModel
+@inject IRelogio Relogio
+@{
+    var paginacao = ModeloPaginacao.De(Model.Pagina, Context.Request, "veículo", "veículos");
+}
+
+@if (Model.Pagina.TotalItens == 0)
+{
+    <div class="vazio">
+        @Icones.Desenhar("veiculo", 38)
+        <h3>Nenhum veículo encontrado</h3>
+        @if (Model.Filtro.TemFiltrosAtivos)
+        {
+            <p>Não há veículos que correspondam aos filtros aplicados.</p>
+            <a class="botao botao--secundario" href="/veiculos">Limpar filtros</a>
+        }
+        else
+        {
+            <p>Ainda não existem veículos registados.</p>
+            @if (Model.PodeCriar)
+            {
+                <a class="botao botao--primario" href="/veiculos/novo">@Icones.Desenhar("mais") Novo veículo</a>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="tabela-envolvente">
+        <table class="tabela">
+            <thead>
+                <tr>
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "matricula", "Matrícula")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "marca", "Marca e modelo")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "ano", "Ano", "numerico")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "combustivel", "Combustível")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "quilometragem", "Quilometragem", "numerico")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "cliente", "Cliente")
+                    @Tabelas.CabecalhoOrdenavel(Context.Request, "inspecao", "Próxima inspeção")
+                    <th scope="col" class="acoes"><span class="so-leitores">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var veiculo in Model.Pagina.Itens)
+                {
+                    var vencida = veiculo.ProximaInspecao is not null && veiculo.ProximaInspecao < Model.Hoje;
+                    var proxima = veiculo.ProximaInspecao is not null
+                        && !vencida
+                        && veiculo.ProximaInspecao <= Model.Hoje.AddDays(30);
+                    <tr>
+                        <td>
+                            <a href="/veiculos/@veiculo.Id"><span class="matricula">@veiculo.Matricula</span></a>
+                            @if (veiculo.Eliminado)
+                            {
+                                <div><span class="selo selo--perigo">Eliminado</span></div>
+                            }
+                            else if (!veiculo.Ativo)
+                            {
+                                <div><span class="selo selo--neutro">Inativo</span></div>
+                            }
+                        </td>
+                        <td>
+                            <span class="principal">@veiculo.Marca @veiculo.Modelo</span>
+                            @if (!string.IsNullOrWhiteSpace(veiculo.Versao))
+                            {
+                                <div class="secundario">@veiculo.Versao</div>
+                            }
+                        </td>
+                        <td class="numerico">@(veiculo.Ano?.ToString() ?? "—")</td>
+                        <td>@Formatos.Enumeracao(veiculo.Combustivel)</td>
+                        <td class="numerico">@Formatos.Quilometros(veiculo.Quilometragem)</td>
+                        <td><a href="/clientes/@veiculo.ClienteId">@veiculo.ClienteNome</a></td>
+                        <td>
+                            @Formatos.Data(veiculo.ProximaInspecao)
+                            @if (veiculo.ProximaInspecao is not null)
+                            {
+                                <div>
+                                    <span class="selo @(vencida ? "selo--perigo" : proxima ? "selo--aviso" : "selo--neutro")">
+                                        @Formatos.PrazoRelativo(veiculo.ProximaInspecao, Model.Hoje)
+                                    </span>
+                                </div>
+                            }
+                        </td>
+                        <td class="acoes">
+                            <a class="botao botao--fantasma botao--pequeno" href="/veiculos/@veiculo.Id" title="Ver ficha">
+                                @Icones.Desenhar("olho", 15)<span class="so-leitores">Ver ficha de @veiculo.Matricula</span>
+                            </a>
+                            @if (Model.PodeEditar && !veiculo.Eliminado)
+                            {
+                                <a class="botao botao--fantasma botao--pequeno" href="/veiculos/@veiculo.Id/editar" title="Editar">
+                                    @Icones.Desenhar("lapis", 15)<span class="so-leitores">Editar @veiculo.Matricula</span>
+                                </a>
+                            }
+                            @if (Model.PodeEliminar && !veiculo.Eliminado)
+                            {
+                                <form method="post" asp-page-handler="Eliminar" asp-route-id="@veiculo.Id" style="display:inline"
+                                      data-confirmar="Eliminar o veículo @veiculo.Matricula? O registo deixa de aparecer nas listagens mas fica no histórico.">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="botao botao--fantasma botao--pequeno" title="Eliminar">
+                                        @Icones.Desenhar("lixo", 15)<span class="so-leitores">Eliminar @veiculo.Matricula</span>
+                                    </button>
+                                </form>
+                            }
+                            @if (Model.PodeEliminar && veiculo.Eliminado)
+                            {
+                                <form method="post" asp-page-handler="Reativar" asp-route-id="@veiculo.Id" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="botao botao--fantasma botao--pequeno" title="Reativar">
+                                        @Icones.Desenhar("reativar", 15)<span class="so-leitores">Reativar @veiculo.Matricula</span>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="cartao__rodape">
+        <partial name="_Paginacao" model="paginacao" />
+    </div>
+}

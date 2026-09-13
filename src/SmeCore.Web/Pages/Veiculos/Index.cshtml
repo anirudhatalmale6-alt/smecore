@@ -1,0 +1,156 @@
+@page "/veiculos"
+@model SmeCore.Web.Pages.Veiculos.IndexModel
+@{
+    ViewData["Titulo"] = "Veículos";
+    ViewData["Subtitulo"] = Model.NomeCliente is not null
+        ? $"Frota de {Model.NomeCliente}"
+        : (Model.Pagina.TotalItens == 1 ? "1 veículo" : $"{Model.Pagina.TotalItens.ToString("N0", Formatos.CulturaPt)} veículos");
+
+    var urlCsv = Tabelas.ConstruirUrl(Request.Path, Ligacoes.ParaExportacao(Request, "csv"));
+    var urlXlsx = Tabelas.ConstruirUrl(Request.Path, Ligacoes.ParaExportacao(Request, "xlsx"));
+    var filtrosAtivos = Model.FiltrosAtivos().ToList();
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>Veículos</h1>
+        <p>Frota registada, por cliente, com controlo das inspeções periódicas.</p>
+    </div>
+    <div class="pagina__acoes">
+        @if (Model.PodeExportar)
+        {
+            <a class="botao botao--secundario" href="@urlCsv" title="Descarregar em CSV (Excel pt-PT)">@Icones.Desenhar("folha") CSV</a>
+            <a class="botao botao--secundario" href="@urlXlsx" title="Descarregar em Excel">@Icones.Desenhar("descarregar") Excel</a>
+        }
+        @if (Model.PodeCriar)
+        {
+            <a class="botao botao--primario" href="/veiculos/novo">@Icones.Desenhar("mais") Novo veículo</a>
+        }
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao__corpo">
+        <form method="get" class="filtros"
+              hx-get="/veiculos?handler=Tabela"
+              hx-target="#lista-veiculos"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              hx-indicator="#indicador-lista"
+              hx-trigger="change">
+            <input type="hidden" name="pagina" value="1" />
+            @if (Model.Filtro.ClienteId.HasValue)
+            {
+                <input type="hidden" name="clienteId" value="@Model.Filtro.ClienteId" />
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Filtro.Ordenar))
+            {
+                <input type="hidden" name="ordenar" value="@Model.Filtro.Ordenar" />
+                <input type="hidden" name="direcao" value="@Model.Filtro.Direcao" />
+            }
+            @if (Model.Filtro.TamanhoPagina != ParametrosListagem.TamanhoPaginaPredefinido)
+            {
+                <input type="hidden" name="tamanhoPagina" value="@Model.Filtro.TamanhoPagina" />
+            }
+
+            <div class="filtros__linha">
+                <div class="pesquisa">
+                    @Icones.Desenhar("pesquisa")
+                    <input type="search" name="pesquisa" value="@Model.Filtro.Pesquisa"
+                           placeholder="Matrícula, marca, modelo, VIN ou cliente…"
+                           aria-label="Pesquisar veículos"
+                           hx-get="/veiculos?handler=Tabela"
+                           hx-trigger="input changed delay:450ms, search"
+                           hx-include="closest form" />
+                </div>
+
+                <div class="campo">
+                    <label for="marca">Marca</label>
+                    <select id="marca" name="marca">
+                        <option value="">Todas</option>
+                        @foreach (var marca in Model.Marcas)
+                        {
+                            <option value="@marca" selected="@(Model.Filtro.Marca == marca)">@marca</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="combustivel">Combustível</label>
+                    <select id="combustivel" name="combustivel">
+                        <option value="">Todos</option>
+                        @foreach (var valor in Enum.GetValues<TipoCombustivel>())
+                        {
+                            <option value="@((int)valor)" selected="@(Model.Filtro.Combustivel == valor)">@Formatos.Enumeracao(valor)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="anoDe">Ano de</label>
+                    <input id="anoDe" name="anoDe" type="number" min="1900" max="2100" value="@Model.Filtro.AnoDe" />
+                </div>
+
+                <div class="campo">
+                    <label for="anoAte">Ano até</label>
+                    <input id="anoAte" name="anoAte" type="number" min="1900" max="2100" value="@Model.Filtro.AnoAte" />
+                </div>
+
+                <div class="campo">
+                    <label for="inspecaoProximosDias">Inspeção</label>
+                    <select id="inspecaoProximosDias" name="inspecaoProximosDias">
+                        <option value="">Indiferente</option>
+                        <option value="30" selected="@(Model.Filtro.InspecaoProximosDias == 30)">Nos próximos 30 dias</option>
+                        <option value="60" selected="@(Model.Filtro.InspecaoProximosDias == 60)">Nos próximos 60 dias</option>
+                        <option value="90" selected="@(Model.Filtro.InspecaoProximosDias == 90)">Nos próximos 90 dias</option>
+                    </select>
+                </div>
+
+                <div class="filtros__acoes">
+                    <button type="submit" class="botao botao--secundario">@Icones.Desenhar("filtro") Filtrar</button>
+                    <span id="indicador-lista" class="htmx-indicator pequeno tenue">A atualizar…</span>
+                    @if (Model.Filtro.TemFiltrosAtivos)
+                    {
+                        <a class="botao botao--fantasma" href="/veiculos">Limpar</a>
+                    }
+                </div>
+            </div>
+
+            <div class="grupo-escolhas">
+                <label class="escolha pequeno">
+                    <input type="checkbox" name="inspecaoVencida" value="true" checked="@Model.Filtro.InspecaoVencida" />
+                    <span>Só inspeções vencidas</span>
+                </label>
+                <label class="escolha pequeno">
+                    <input type="checkbox" name="ativo" value="false" checked="@(Model.Filtro.Ativo == false)" />
+                    <span>Só veículos inativos</span>
+                </label>
+                @if (Model.PodeEliminar)
+                {
+                    <label class="escolha pequeno">
+                        <input type="checkbox" name="incluirEliminados" value="true" checked="@Model.Filtro.IncluirEliminados" />
+                        <span>Mostrar também eliminados</span>
+                    </label>
+                }
+            </div>
+
+            @if (filtrosAtivos.Count > 0)
+            {
+                <div class="etiquetas-filtro">
+                    <span class="pequeno tenue">Filtros:</span>
+                    @foreach (var (texto, url) in filtrosAtivos)
+                    {
+                        <span class="etiqueta-filtro">
+                            @texto
+                            <a href="@url" title="Remover este filtro" aria-label="Remover o filtro @texto">×</a>
+                        </span>
+                    }
+                </div>
+            }
+        </form>
+    </div>
+
+    <div id="lista-veiculos">
+        <partial name="_Tabela" model="Model" />
+    </div>
+</div>

@@ -1,0 +1,269 @@
+@page "/clientes/{id:guid}"
+@model SmeCore.Web.Pages.Clientes.DetalhesModel
+@inject IRelogio Relogio
+@{
+    ViewData["Titulo"] = Model.Cliente.Nome;
+    ViewData["Subtitulo"] = $"Cliente n.º {Model.Cliente.Numero}";
+    var hoje = Relogio.HojeLocal;
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>@Model.Cliente.Nome</h1>
+        <p>
+            <span class="selo selo--neutro">@Formatos.Enumeracao(Model.Cliente.Tipo)</span>
+            @if (Model.Cliente.Eliminado)
+            {
+                <span class="selo selo--perigo">Eliminado</span>
+            }
+            else if (Model.Cliente.Ativo)
+            {
+                <span class="selo selo--sucesso">Ativo</span>
+            }
+            else
+            {
+                <span class="selo selo--neutro">Inativo</span>
+            }
+            · Cliente n.º @Model.Cliente.Numero
+        </p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="/clientes">@Icones.Desenhar("regressar") Voltar à lista</a>
+
+        @if (Model.PodeEditar && !Model.Cliente.Eliminado)
+        {
+            <a class="botao botao--primario" href="/clientes/@Model.Cliente.Id/editar">@Icones.Desenhar("lapis") Editar</a>
+        }
+
+        @if (Model.PodeEliminar && !Model.Cliente.Eliminado)
+        {
+            <form method="post" asp-page-handler="Eliminar" asp-route-id="@Model.Cliente.Id"
+                  data-confirmar="Eliminar o cliente @Model.Cliente.Nome? O registo deixa de aparecer nas listagens mas fica no histórico.">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="botao botao--secundario">@Icones.Desenhar("lixo") Eliminar</button>
+            </form>
+        }
+
+        @if (Model.PodeEliminar && Model.Cliente.Eliminado)
+        {
+            <form method="post" asp-page-handler="Reativar" asp-route-id="@Model.Cliente.Id">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="botao botao--acento">@Icones.Desenhar("reativar") Reativar</button>
+            </form>
+        }
+    </div>
+</div>
+
+<nav class="separadores" aria-label="Secções da ficha">
+    <a href="/clientes/@Model.Cliente.Id" class="@(Model.Separador == "dados" ? "ativo" : "")">Dados</a>
+    @if (Model.PodeVerVeiculos)
+    {
+        <a href="/clientes/@Model.Cliente.Id?ver=veiculos" class="@(Model.Separador == "veiculos" ? "ativo" : "")">
+            Veículos (@Model.Cliente.Veiculos.Count)
+        </a>
+    }
+    @if (Model.PodeVerHistorico)
+    {
+        <a href="/clientes/@Model.Cliente.Id?ver=historico" class="@(Model.Separador == "historico" ? "ativo" : "")">Histórico</a>
+    }
+</nav>
+
+@if (Model.Separador == "dados")
+{
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Identificação e contactos</h2></div>
+        <div class="cartao__corpo">
+            <div class="detalhe">
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Nome / Designação</div>
+                    <div class="detalhe__valor detalhe__valor--grande">@Model.Cliente.Nome</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">NIF</div>
+                    <div class="detalhe__valor mono">@(string.IsNullOrWhiteSpace(Model.Cliente.Nif) ? "—" : SmeCore.Domain.Validacao.Nif.Formatar(Model.Cliente.Nif))</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">E-mail</div>
+                    <div class="detalhe__valor">
+                        @if (!string.IsNullOrWhiteSpace(Model.Cliente.Email))
+                        {
+                            <a href="mailto:@Model.Cliente.Email">@Model.Cliente.Email</a>
+                        }
+                        else
+                        {
+                            <span class="tenue">—</span>
+                        }
+                    </div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Telefone</div>
+                    <div class="detalhe__valor">@Formatos.Texto(Model.Cliente.Telefone)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Telemóvel</div>
+                    <div class="detalhe__valor">@Formatos.Texto(Model.Cliente.Telemovel)</div>
+                </div>
+                <div class="detalhe__item">
+                    <div class="detalhe__rotulo">Morada</div>
+                    <div class="detalhe__valor">
+                        @Formatos.Texto(Model.Cliente.Morada)
+                        @if (!string.IsNullOrWhiteSpace(Model.Cliente.CodigoPostal) || !string.IsNullOrWhiteSpace(Model.Cliente.Localidade))
+                        {
+                            <div class="secundario">@Model.Cliente.CodigoPostal @Model.Cliente.Localidade</div>
+                        }
+                        <div class="secundario">@Model.Cliente.Pais</div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Cliente.Observacoes))
+            {
+                <div class="formulario__secao" style="margin-top: 1.2rem;">
+                    <div class="formulario__titulo">Observações</div>
+                    <p class="sem-margem">@Model.Cliente.Observacoes</p>
+                </div>
+            }
+        </div>
+        <div class="cartao__rodape pequeno tenue">
+            Criado em @Formatos.DataHora(Model.Cliente.CriadoEm, Relogio) por @Formatos.Texto(Model.Cliente.CriadoPorNome)
+            @if (Model.Cliente.AlteradoEm.HasValue)
+            {
+                <text>· última alteração em @Formatos.DataHora(Model.Cliente.AlteradoEm, Relogio) por @Formatos.Texto(Model.Cliente.AlteradoPorNome)</text>
+            }
+        </div>
+    </div>
+
+    @if (Model.Cliente.Contactos.Count > 0)
+    {
+        <div class="cartao">
+            <div class="cartao__cabecalho"><h2>Pessoas de contacto</h2></div>
+            <div class="tabela-envolvente">
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nome</th>
+                            <th scope="col">Função</th>
+                            <th scope="col">E-mail</th>
+                            <th scope="col">Telefone</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var contacto in Model.Cliente.Contactos)
+                        {
+                            <tr>
+                                <td class="principal">@contacto.Nome</td>
+                                <td>@Formatos.Texto(contacto.Funcao)</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(contacto.Email))
+                                    {
+                                        <a href="mailto:@contacto.Email">@contacto.Email</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="tenue">—</span>
+                                    }
+                                </td>
+                                <td>@Formatos.Texto(contacto.Telefone)</td>
+                                <td>
+                                    @if (contacto.Principal)
+                                    {
+                                        <span class="selo selo--acento">Principal</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+else if (Model.Separador == "veiculos")
+{
+    <div class="cartao">
+        <div class="cartao__cabecalho">
+            <h2>Veículos deste cliente</h2>
+            <div class="direita">
+                @if (Model.PodeCriarVeiculos && !Model.Cliente.Eliminado)
+                {
+                    <a class="botao botao--primario botao--pequeno" href="/veiculos/novo?clienteId=@Model.Cliente.Id">
+                        @Icones.Desenhar("mais") Novo veículo
+                    </a>
+                }
+            </div>
+        </div>
+
+        @if (Model.Cliente.Veiculos.Count == 0)
+        {
+            <div class="vazio">
+                @Icones.Desenhar("veiculo", 38)
+                <h3>Sem veículos registados</h3>
+                <p>Este cliente ainda não tem veículos associados.</p>
+                @if (Model.PodeCriarVeiculos && !Model.Cliente.Eliminado)
+                {
+                    <a class="botao botao--primario" href="/veiculos/novo?clienteId=@Model.Cliente.Id">
+                        @Icones.Desenhar("mais") Registar veículo
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="tabela-envolvente">
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th scope="col">Matrícula</th>
+                            <th scope="col">Marca e modelo</th>
+                            <th scope="col">Ano</th>
+                            <th scope="col">Combustível</th>
+                            <th scope="col" class="numerico">Quilometragem</th>
+                            <th scope="col">Próxima inspeção</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var veiculo in Model.Cliente.Veiculos.OrderBy(v => v.Matricula))
+                        {
+                            var vencida = veiculo.ProximaInspecao is not null && veiculo.ProximaInspecao < hoje;
+                            <tr>
+                                <td><a href="/veiculos/@veiculo.Id"><span class="matricula">@veiculo.Matricula</span></a></td>
+                                <td>
+                                    <span class="principal">@veiculo.Marca @veiculo.Modelo</span>
+                                    @if (!string.IsNullOrWhiteSpace(veiculo.Versao))
+                                    {
+                                        <div class="secundario">@veiculo.Versao</div>
+                                    }
+                                </td>
+                                <td>@(veiculo.Ano?.ToString() ?? "—")</td>
+                                <td>@Formatos.Enumeracao(veiculo.Combustivel)</td>
+                                <td class="numerico">@Formatos.Quilometros(veiculo.Quilometragem)</td>
+                                <td>
+                                    @Formatos.Data(veiculo.ProximaInspecao)
+                                    @if (veiculo.ProximaInspecao is not null)
+                                    {
+                                        <span class="selo @(vencida ? "selo--perigo" : "selo--neutro")">
+                                            @Formatos.PrazoRelativo(veiculo.ProximaInspecao, hoje)
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="cartao">
+        <div class="cartao__cabecalho">
+            <h2>Histórico deste cliente</h2>
+            <div class="direita pequeno tenue">Últimas 200 alterações</div>
+        </div>
+        <div class="cartao__corpo">
+            <partial name="_Historico" model="Model.Historico" />
+        </div>
+    </div>
+}

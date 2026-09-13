@@ -1,0 +1,111 @@
+@page "/perfis"
+@model SmeCore.Web.Pages.Utilizadores.PerfisModel
+@{
+    ViewData["Titulo"] = "Perfis e permissões";
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>Perfis e permissões</h1>
+        <p>
+            Cada perfil agrupa permissões; cada utilizador pode ter um ou mais perfis.
+            Quando um módulo novo for acrescentado à aplicação, as suas permissões aparecem aqui automaticamente.
+        </p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="/utilizadores">@Icones.Desenhar("utilizador") Utilizadores</a>
+        <a class="botao botao--primario" href="/perfis/novo">@Icones.Desenhar("mais") Novo perfil</a>
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="tabela-envolvente">
+        <table class="tabela">
+            <thead>
+                <tr>
+                    <th scope="col">Perfil</th>
+                    <th scope="col">Descrição</th>
+                    <th scope="col" class="numerico">Utilizadores</th>
+                    <th scope="col" class="numerico">Permissões</th>
+                    <th scope="col" class="acoes"><span class="so-leitores">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var perfil in Model.Perfis)
+                {
+                    var total = Model.Contagens.TryGetValue(perfil.Id, out var contagem) ? contagem : 0;
+                    var permissoes = Model.PermissoesPorPerfil.TryGetValue(perfil.Id, out var lista) ? lista.Count : 0;
+                    var administrador = string.Equals(perfil.Name, Permissoes.PerfilAdministrador, StringComparison.OrdinalIgnoreCase);
+                    <tr>
+                        <td>
+                            <span class="principal">@perfil.Name</span>
+                            @if (perfil.DeSistema)
+                            {
+                                <span class="selo selo--neutro">De sistema</span>
+                            }
+                        </td>
+                        <td class="secundario">@Formatos.Texto(perfil.Descricao)</td>
+                        <td class="numerico">
+                            @if (total > 0)
+                            {
+                                <a href="/utilizadores?perfil=@perfil.Name">@total</a>
+                            }
+                            else
+                            {
+                                <span class="tenue">0</span>
+                            }
+                        </td>
+                        <td class="numerico">
+                            @if (administrador)
+                            {
+                                <span class="selo selo--acento">Acesso total</span>
+                            }
+                            else
+                            {
+                                @permissoes<text> de </text>@Permissoes.Todas.Count
+                            }
+                        </td>
+                        <td class="acoes">
+                            <a class="botao botao--fantasma botao--pequeno" href="/perfis/@perfil.Id/editar" title="Editar permissões">
+                                @Icones.Desenhar("lapis", 15)<span class="so-leitores">Editar @perfil.Name</span>
+                            </a>
+                            @if (!perfil.DeSistema)
+                            {
+                                <form method="post" asp-page-handler="Eliminar" asp-route-id="@perfil.Id" style="display:inline"
+                                      data-confirmar="Eliminar o perfil @perfil.Name?">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="botao botao--fantasma botao--pequeno" title="Eliminar">
+                                        @Icones.Desenhar("lixo", 15)<span class="so-leitores">Eliminar @perfil.Name</span>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao__cabecalho"><h2>O que cada permissão controla</h2></div>
+    <div class="cartao__corpo">
+        <div class="permissoes">
+            @foreach (var modulo in Permissoes.Modulos)
+            {
+                <div class="permissoes__modulo">
+                    <h3>@Icones.Desenhar(modulo.Icone, 15) @modulo.Nome</h3>
+                    @foreach (var permissao in modulo.Permissoes)
+                    {
+                        <div class="escolha">
+                            <span>
+                                <strong>@permissao.Titulo</strong>
+                                <small>@permissao.Descricao</small>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

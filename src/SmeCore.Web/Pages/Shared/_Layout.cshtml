@@ -1,0 +1,137 @@
+@inject IPermissoesServico Autorizacao
+@{
+    var caminho = (Context.Request.Path.Value ?? "/").ToLowerInvariant();
+    bool Ativa(string prefixo) => prefixo == "/"
+        ? caminho == "/"
+        : caminho.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase);
+
+    var podeVerClientes = await Autorizacao.TemPermissaoAsync(User, Permissoes.Clientes.Ver);
+    var podeVerVeiculos = await Autorizacao.TemPermissaoAsync(User, Permissoes.Veiculos.Ver);
+    var podeVerUtilizadores = await Autorizacao.TemPermissaoAsync(User, Permissoes.Utilizadores.Ver);
+    var podeGerirPerfis = await Autorizacao.TemPermissaoAsync(User, Permissoes.Utilizadores.GerirPerfis);
+    var podeVerHistorico = await Autorizacao.TemPermissaoAsync(User, Permissoes.Historico.Ver);
+
+    var nome = User.FindFirst(FabricaClaims.ClaimNome)?.Value ?? User.Identity?.Name ?? "—";
+    var iniciais = string.Join("", nome.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Where(p => char.IsLetter(p[0]))
+        .Take(2)
+        .Select(p => char.ToUpperInvariant(p[0])));
+    var perfilPrincipal = User.FindAll(System.Security.Claims.ClaimTypes.Role).FirstOrDefault()?.Value;
+}
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Titulo"] ?? "Gestão") · SmeCore</title>
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="icon" href="~/favicon.ico" />
+</head>
+<body data-menu="fechado">
+    <div class="aplicacao">
+        <aside class="lateral">
+            <div class="lateral__marca">
+                <span class="lateral__logo">SC</span>
+                <span class="lateral__nome">
+                    SmeCore
+                    <small>Gestão de clientes e frota</small>
+                </span>
+            </div>
+
+            <nav class="lateral__navegacao" aria-label="Navegação principal">
+                <a class="lateral__ligacao @(Ativa("/") ? "lateral__ligacao--ativa" : "")" href="/">
+                    @Icones.Desenhar("painel") Painel
+                </a>
+
+                @if (podeVerClientes || podeVerVeiculos)
+                {
+                    <div class="lateral__grupo">Registos</div>
+                }
+                @if (podeVerClientes)
+                {
+                    <a class="lateral__ligacao @(Ativa("/clientes") ? "lateral__ligacao--ativa" : "")" href="/clientes">
+                        @Icones.Desenhar("utilizadores") Clientes
+                    </a>
+                }
+                @if (podeVerVeiculos)
+                {
+                    <a class="lateral__ligacao @(Ativa("/veiculos") ? "lateral__ligacao--ativa" : "")" href="/veiculos">
+                        @Icones.Desenhar("veiculo") Veículos
+                    </a>
+                }
+
+                @if (podeVerUtilizadores || podeGerirPerfis || podeVerHistorico)
+                {
+                    <div class="lateral__grupo">Administração</div>
+                }
+                @if (podeVerUtilizadores)
+                {
+                    <a class="lateral__ligacao @(Ativa("/utilizadores") ? "lateral__ligacao--ativa" : "")" href="/utilizadores">
+                        @Icones.Desenhar("utilizador") Utilizadores
+                    </a>
+                }
+                @if (podeGerirPerfis)
+                {
+                    <a class="lateral__ligacao @(Ativa("/perfis") ? "lateral__ligacao--ativa" : "")" href="/perfis">
+                        @Icones.Desenhar("escudo") Perfis e permissões
+                    </a>
+                }
+                @if (podeVerHistorico)
+                {
+                    <a class="lateral__ligacao @(Ativa("/historico") ? "lateral__ligacao--ativa" : "")" href="/historico">
+                        @Icones.Desenhar("historico") Histórico
+                    </a>
+                }
+            </nav>
+
+            <div class="lateral__rodape">
+                Base reutilizável ASP.NET Core<br />
+                Versão @(VersaoAplicacao.Numero)
+            </div>
+        </aside>
+
+        <div class="conteudo">
+            <header class="topo">
+                <button type="button" class="menu-botao" data-acao="menu" aria-expanded="false" aria-label="Abrir menu">
+                    @Icones.Desenhar("menu", 20)
+                </button>
+
+                <div class="topo__titulo">
+                    @(ViewData["Titulo"] ?? "Painel")
+                    @if (ViewData["Subtitulo"] is string subtitulo && !string.IsNullOrWhiteSpace(subtitulo))
+                    {
+                        <small>@subtitulo</small>
+                    }
+                </div>
+
+                <div class="topo__espaco"></div>
+
+                <div class="topo__utilizador">
+                    <div class="topo__nome">
+                        @nome
+                        <small>@(perfilPrincipal ?? "Sem perfil atribuído")</small>
+                    </div>
+                    <a href="/a-minha-conta" class="avatar" title="A minha conta">@(string.IsNullOrEmpty(iniciais) ? "?" : iniciais)</a>
+                    <form method="post" action="/sair">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="botao botao--fantasma botao--pequeno" title="Terminar sessão">
+                            @Icones.Desenhar("sair", 16)
+                            <span class="so-leitores">Terminar sessão</span>
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="pagina">
+                <partial name="_Mensagem" />
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/htmx/htmx.min.js"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

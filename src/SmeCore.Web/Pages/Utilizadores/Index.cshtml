@@ -1,0 +1,175 @@
+@page "/utilizadores"
+@model SmeCore.Web.Pages.Utilizadores.IndexModel
+@inject IRelogio Relogio
+@{
+    ViewData["Titulo"] = "Utilizadores";
+    ViewData["Subtitulo"] = Model.Pagina.TotalItens == 1 ? "1 conta" : $"{Model.Pagina.TotalItens} contas";
+    var paginacao = ModeloPaginacao.De(Model.Pagina, Request, "utilizador", "utilizadores");
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>Utilizadores</h1>
+        <p>Contas de acesso à aplicação e respetivos perfis de permissões.</p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="/perfis">@Icones.Desenhar("escudo") Perfis e permissões</a>
+        @if (Model.PodeGerir)
+        {
+            <a class="botao botao--primario" href="/utilizadores/novo">@Icones.Desenhar("mais") Novo utilizador</a>
+        }
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao__corpo">
+        <form method="get" class="filtros">
+            <input type="hidden" name="pagina" value="1" />
+            <div class="filtros__linha">
+                <div class="pesquisa">
+                    @Icones.Desenhar("pesquisa")
+                    <input type="search" name="pesquisa" value="@Model.Filtro.Pesquisa"
+                           placeholder="Nome, e-mail ou cargo…" aria-label="Pesquisar utilizadores" />
+                </div>
+                <div class="campo">
+                    <label for="perfil">Perfil</label>
+                    <select id="perfil" name="perfil">
+                        <option value="">Todos</option>
+                        @foreach (var perfil in Model.Perfis)
+                        {
+                            <option value="@perfil.Name" selected="@(Model.Filtro.Perfil == perfil.Name)">@perfil.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="ativo">Estado</label>
+                    <select id="ativo" name="ativo">
+                        <option value="">Todos</option>
+                        <option value="true" selected="@(Model.Filtro.Ativo == true)">Ativos</option>
+                        <option value="false" selected="@(Model.Filtro.Ativo == false)">Desativados</option>
+                    </select>
+                </div>
+                <div class="filtros__acoes">
+                    <button type="submit" class="botao botao--secundario">@Icones.Desenhar("filtro") Filtrar</button>
+                    @if (Model.Filtro.TemFiltrosAtivos)
+                    {
+                        <a class="botao botao--fantasma" href="/utilizadores">Limpar</a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @if (Model.Pagina.TotalItens == 0)
+    {
+        <div class="vazio">
+            @Icones.Desenhar("utilizador", 38)
+            <h3>Nenhum utilizador encontrado</h3>
+            <p>Não há contas que correspondam aos filtros aplicados.</p>
+        </div>
+    }
+    else
+    {
+        <div class="tabela-envolvente">
+            <table class="tabela">
+                <thead>
+                    <tr>
+                        @Tabelas.CabecalhoOrdenavel(Request, "nome", "Nome")
+                        @Tabelas.CabecalhoOrdenavel(Request, "email", "E-mail")
+                        @Tabelas.CabecalhoOrdenavel(Request, "cargo", "Cargo")
+                        <th scope="col">Perfis</th>
+                        <th scope="col">Estado</th>
+                        @Tabelas.CabecalhoOrdenavel(Request, "acesso", "Último acesso")
+                        <th scope="col" class="acoes"><span class="so-leitores">Ações</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var utilizador in Model.Pagina.Itens)
+                    {
+                        <tr>
+                            <td>
+                                <span class="principal">@utilizador.NomeCompleto</span>
+                                @if (utilizador.Id == Model.EuMesmo)
+                                {
+                                    <span class="selo selo--acento">A minha conta</span>
+                                }
+                            </td>
+                            <td>@Formatos.Texto(utilizador.Email)</td>
+                            <td>@Formatos.Texto(utilizador.Cargo)</td>
+                            <td>
+                                @if (utilizador.Perfis.Count == 0)
+                                {
+                                    <span class="selo selo--aviso">Sem perfil</span>
+                                }
+                                else
+                                {
+                                    @foreach (var perfil in utilizador.Perfis)
+                                    {
+                                        <span class="selo selo--neutro">@perfil</span>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                @if (!utilizador.Ativo)
+                                {
+                                    <span class="selo selo--neutro">Desativado</span>
+                                }
+                                else if (utilizador.Bloqueado)
+                                {
+                                    <span class="selo selo--perigo">Bloqueado</span>
+                                }
+                                else
+                                {
+                                    <span class="selo selo--sucesso">Ativo</span>
+                                }
+                            </td>
+                            <td class="secundario">
+                                @(utilizador.UltimoAcessoEm.HasValue
+                                    ? Formatos.DataHora(utilizador.UltimoAcessoEm, Relogio)
+                                    : "Nunca entrou")
+                            </td>
+                            <td class="acoes">
+                                @if (Model.PodeGerir)
+                                {
+                                    <a class="botao botao--fantasma botao--pequeno" href="/utilizadores/@utilizador.Id/editar" title="Editar">
+                                        @Icones.Desenhar("lapis", 15)<span class="so-leitores">Editar @utilizador.NomeCompleto</span>
+                                    </a>
+
+                                    @if (utilizador.Bloqueado)
+                                    {
+                                        <form method="post" asp-page-handler="Desbloquear" asp-route-id="@utilizador.Id" style="display:inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="botao botao--fantasma botao--pequeno" title="Desbloquear">
+                                                @Icones.Desenhar("chave", 15)<span class="so-leitores">Desbloquear conta</span>
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (utilizador.Id != Model.EuMesmo)
+                                    {
+                                        <form method="post" asp-page-handler="Estado" asp-route-id="@utilizador.Id"
+                                              asp-route-ativo="@(!utilizador.Ativo)" style="display:inline"
+                                              data-confirmar="@(utilizador.Ativo
+                                                  ? $"Desativar a conta de {utilizador.NomeCompleto}? Deixa de conseguir entrar na aplicação."
+                                                  : $"Reativar a conta de {utilizador.NomeCompleto}?")">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="botao botao--fantasma botao--pequeno"
+                                                    title="@(utilizador.Ativo ? "Desativar" : "Ativar")">
+                                                @Icones.Desenhar(utilizador.Ativo ? "lixo" : "reativar", 15)
+                                                <span class="so-leitores">@(utilizador.Ativo ? "Desativar" : "Ativar") @utilizador.NomeCompleto</span>
+                                            </button>
+                                        </form>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="cartao__rodape">
+            <partial name="_Paginacao" model="paginacao" />
+        </div>
+    }
+</div>

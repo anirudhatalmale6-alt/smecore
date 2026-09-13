@@ -1,0 +1,79 @@
+@model IReadOnlyList<HistoricoLinha>
+@inject IRelogio Relogio
+@if (Model.Count == 0)
+{
+    <div class="vazio">
+        @Icones.Desenhar("historico", 38)
+        <h3>Sem registos de histórico</h3>
+        <p>As alterações feitas a este registo aparecem aqui, com o campo alterado, o valor anterior e quem as fez.</p>
+    </div>
+}
+else
+{
+    <ul class="historico">
+        @foreach (var linha in Model)
+        {
+            var classePonto = linha.Acao switch
+            {
+                AcaoAuditoria.Criacao => "historico__ponto--criacao",
+                AcaoAuditoria.Eliminacao => "historico__ponto--eliminacao",
+                AcaoAuditoria.Reativacao => "historico__ponto--reativacao",
+                AcaoAuditoria.Autenticacao => "historico__ponto--autenticacao",
+                _ => string.Empty
+            };
+            var simbolo = linha.Acao switch
+            {
+                AcaoAuditoria.Criacao => "+",
+                AcaoAuditoria.Eliminacao => "×",
+                AcaoAuditoria.Reativacao => "↺",
+                AcaoAuditoria.Autenticacao => "→",
+                _ => "±"
+            };
+            <li class="historico__item">
+                <span class="historico__ponto @classePonto" aria-hidden="true">@simbolo</span>
+                <div>
+                    <div class="historico__cabecalho">
+                        <span class="historico__titulo">
+                            @HistoricoServico.NomeAcao(linha.Acao) · @HistoricoServico.NomeEntidade(linha.Entidade)
+                        </span>
+                        <span class="historico__meta">
+                            @Formatos.DataHoraSegundos(linha.Instante, Relogio)
+                            · @Formatos.Texto(linha.UtilizadorNome)
+                            @if (!string.IsNullOrWhiteSpace(linha.Origem))
+                            {
+                                <text>· @linha.Origem</text>
+                            }
+                        </span>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(linha.EntidadeDescricao))
+                    {
+                        <div class="pequeno suave">@linha.EntidadeDescricao</div>
+                    }
+
+                    @if (linha.Alteracoes.Count > 0)
+                    {
+                        <ul class="historico__alteracoes">
+                            @foreach (var alteracao in linha.Alteracoes)
+                            {
+                                <li>
+                                    <span class="historico__campo">@HistoricoServico.NomeCampo(alteracao.Campo):</span>
+                                    @if (linha.Acao == AcaoAuditoria.Criacao)
+                                    {
+                                        <span class="historico__para">@HistoricoServico.ValorLegivel(alteracao.Para)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="historico__de">@HistoricoServico.ValorLegivel(alteracao.De)</span>
+                                        <text>→</text>
+                                        <span class="historico__para">@HistoricoServico.ValorLegivel(alteracao.Para)</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </li>
+        }
+    </ul>
+}

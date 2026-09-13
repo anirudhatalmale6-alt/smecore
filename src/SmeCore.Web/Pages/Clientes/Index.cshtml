@@ -1,0 +1,152 @@
+@page "/clientes"
+@model SmeCore.Web.Pages.Clientes.IndexModel
+@{
+    ViewData["Titulo"] = "Clientes";
+    ViewData["Subtitulo"] = Model.Pagina.TotalItens == 1
+        ? "1 cliente"
+        : $"{Model.Pagina.TotalItens.ToString("N0", Formatos.CulturaPt)} clientes";
+
+    var urlCsv = Tabelas.ConstruirUrl(Request.Path, Ligacoes.ParaExportacao(Request, "csv"));
+    var urlXlsx = Tabelas.ConstruirUrl(Request.Path, Ligacoes.ParaExportacao(Request, "xlsx"));
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>Clientes</h1>
+        <p>Particulares e empresas, com os respetivos contactos e veículos.</p>
+    </div>
+    <div class="pagina__acoes">
+        @if (Model.PodeExportar)
+        {
+            <a class="botao botao--secundario"
+               href="@urlCsv"
+               title="Descarregar em CSV (Excel pt-PT)">
+                @Icones.Desenhar("folha") CSV
+            </a>
+            <a class="botao botao--secundario"
+               href="@urlXlsx"
+               title="Descarregar em Excel">
+                @Icones.Desenhar("descarregar") Excel
+            </a>
+        }
+        @if (Model.PodeCriar)
+        {
+            <a class="botao botao--primario" href="/clientes/novo">@Icones.Desenhar("mais") Novo cliente</a>
+        }
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao__corpo">
+        @* Os filtros são aplicados pelo HTMX, que substitui apenas a tabela. Sem JavaScript,
+           o botão "Filtrar" submete o mesmo formulário e recarrega a página inteira — o
+           resultado é igual, só muda o número de bytes transferidos. *@
+        <form method="get" class="filtros"
+              hx-get="/clientes?handler=Tabela"
+              hx-target="#lista-clientes"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              hx-indicator="#indicador-lista"
+              hx-trigger="change">
+            <input type="hidden" name="pagina" value="1" />
+            @if (!string.IsNullOrWhiteSpace(Model.Filtro.Ordenar))
+            {
+                <input type="hidden" name="ordenar" value="@Model.Filtro.Ordenar" />
+                <input type="hidden" name="direcao" value="@Model.Filtro.Direcao" />
+            }
+            @if (Model.Filtro.TamanhoPagina != ParametrosListagem.TamanhoPaginaPredefinido)
+            {
+                <input type="hidden" name="tamanhoPagina" value="@Model.Filtro.TamanhoPagina" />
+            }
+
+            <div class="filtros__linha">
+                <div class="pesquisa">
+                    @Icones.Desenhar("pesquisa")
+                    <input type="search" name="pesquisa" value="@Model.Filtro.Pesquisa"
+                           placeholder="Nome, NIF, e-mail, telefone, localidade ou matrícula…"
+                           aria-label="Pesquisar clientes"
+                           hx-get="/clientes?handler=Tabela"
+                           hx-trigger="input changed delay:450ms, search"
+                           hx-include="closest form" />
+                </div>
+
+                <div class="campo">
+                    <label for="tipo">Tipo</label>
+                    <select id="tipo" name="tipo">
+                        <option value="">Todos</option>
+                        <option value="@((int)TipoCliente.Particular)" selected="@(Model.Filtro.Tipo == TipoCliente.Particular)">Particular</option>
+                        <option value="@((int)TipoCliente.Empresa)" selected="@(Model.Filtro.Tipo == TipoCliente.Empresa)">Empresa</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="ativo">Estado</label>
+                    <select id="ativo" name="ativo">
+                        <option value="">Todos</option>
+                        <option value="true" selected="@(Model.Filtro.Ativo == true)">Ativos</option>
+                        <option value="false" selected="@(Model.Filtro.Ativo == false)">Inativos</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="localidade">Localidade</label>
+                    <select id="localidade" name="localidade">
+                        <option value="">Todas</option>
+                        @foreach (var localidade in Model.Localidades)
+                        {
+                            <option value="@localidade" selected="@(Model.Filtro.Localidade == localidade)">@localidade</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="comVeiculos">Veículos</label>
+                    <select id="comVeiculos" name="comVeiculos">
+                        <option value="">Indiferente</option>
+                        <option value="true" selected="@(Model.Filtro.ComVeiculos == true)">Com veículos</option>
+                        <option value="false" selected="@(Model.Filtro.ComVeiculos == false)">Sem veículos</option>
+                    </select>
+                </div>
+
+                <div class="filtros__acoes">
+                    <button type="submit" class="botao botao--secundario">@Icones.Desenhar("filtro") Filtrar</button>
+                    <span id="indicador-lista" class="htmx-indicator pequeno tenue">A atualizar…</span>
+                    @if (Model.Filtro.TemFiltrosAtivos)
+                    {
+                        <a class="botao botao--fantasma" href="/clientes">Limpar</a>
+                    }
+                </div>
+            </div>
+
+            @if (Model.PodeEliminar)
+            {
+                <label class="escolha pequeno">
+                    <input type="checkbox" name="incluirEliminados" value="true"
+                           checked="@Model.Filtro.IncluirEliminados" />
+                    <span>Mostrar também clientes eliminados</span>
+                </label>
+            }
+
+            @{
+                var filtrosAtivos = Model.FiltrosAtivos().ToList();
+            }
+            @if (filtrosAtivos.Count > 0)
+            {
+                <div class="etiquetas-filtro">
+                    <span class="pequeno tenue">Filtros:</span>
+                    @foreach (var (texto, url) in filtrosAtivos)
+                    {
+                        <span class="etiqueta-filtro">
+                            @texto
+                            <a href="@url" title="Remover este filtro" aria-label="Remover o filtro @texto">×</a>
+                        </span>
+                    }
+                </div>
+            }
+        </form>
+    </div>
+
+    <div id="lista-clientes">
+        <partial name="_Tabela" model="Model" />
+    </div>
+</div>

@@ -1,0 +1,98 @@
+@page "/historico"
+@model SmeCore.Web.Pages.Historico.IndexModel
+@{
+    ViewData["Titulo"] = "Histórico";
+    ViewData["Subtitulo"] = Model.Pagina.TotalItens == 1
+        ? "1 registo"
+        : $"{Model.Pagina.TotalItens.ToString("N0", Formatos.CulturaPt)} registos";
+
+    var paginacao = ModeloPaginacao.De(Model.Pagina, Request, "registo", "registos");
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>Histórico</h1>
+        <p>Todas as alterações feitas na aplicação: quem, quando, e o que mudou em cada campo.</p>
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao__corpo">
+        <form method="get" class="filtros">
+            <input type="hidden" name="pagina" value="1" />
+
+            <div class="filtros__linha">
+                <div class="pesquisa">
+                    @Icones.Desenhar("pesquisa")
+                    <input type="search" name="pesquisa" value="@Model.Filtro.Pesquisa"
+                           placeholder="Registo, utilizador ou valor alterado…" aria-label="Pesquisar no histórico" />
+                </div>
+
+                <div class="campo">
+                    <label for="entidade">Tipo de registo</label>
+                    <select id="entidade" name="entidade">
+                        <option value="">Todos</option>
+                        @foreach (var entidade in Model.Entidades)
+                        {
+                            <option value="@entidade" selected="@(Model.Filtro.Entidade == entidade)">
+                                @HistoricoServico.NomeEntidade(entidade)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="acao">Ação</label>
+                    <select id="acao" name="acao">
+                        <option value="">Todas</option>
+                        @foreach (var acao in SmeCore.Web.Pages.Historico.IndexModel.Acoes)
+                        {
+                            <option value="@((int)acao)" selected="@(Model.Filtro.Acao == acao)">
+                                @HistoricoServico.NomeAcao(acao)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="utilizadorId">Utilizador</label>
+                    <select id="utilizadorId" name="utilizadorId">
+                        <option value="">Todos</option>
+                        @foreach (var utilizador in Model.Utilizadores)
+                        {
+                            <option value="@utilizador.Id" selected="@(Model.Filtro.UtilizadorId == utilizador.Id)">
+                                @utilizador.NomeCompleto
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="de">De</label>
+                    <input id="de" name="de" type="date" value="@Model.Filtro.De?.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="campo">
+                    <label for="ate">Até</label>
+                    <input id="ate" name="ate" type="date" value="@Model.Filtro.Ate?.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="filtros__acoes">
+                    <button type="submit" class="botao botao--secundario">@Icones.Desenhar("filtro") Filtrar</button>
+                    @if (Model.Filtro.TemFiltrosAtivos)
+                    {
+                        <a class="botao botao--fantasma" href="/historico">Limpar</a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="cartao__corpo" style="border-top: 1px solid var(--borda);">
+        <partial name="_Historico" model="Model.Pagina.Itens" />
+    </div>
+
+    <div class="cartao__rodape">
+        <partial name="_Paginacao" model="paginacao" />
+    </div>
+</div>

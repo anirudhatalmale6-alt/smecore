@@ -1,0 +1,128 @@
+@page "/a-minha-conta"
+@model SmeCore.Web.Pages.MinhaContaModel
+@inject IRelogio Relogio
+@{
+    ViewData["Titulo"] = "A minha conta";
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>A minha conta</h1>
+        <p>@Model.Email @if (!string.IsNullOrWhiteSpace(Model.Cargo)) { <text>· @Model.Cargo</text> }</p>
+    </div>
+</div>
+
+@if (Model.TemDeAlterarPalavraPasse)
+{
+    <div class="mensagem mensagem--aviso">
+        @Icones.Desenhar("aviso")
+        <div>Foi-lhe pedido que definisse uma nova palavra-passe. Faça-o na secção abaixo antes de continuar.</div>
+    </div>
+}
+
+<div class="grelha">
+    <div class="col-6">
+        <form method="post" asp-page-handler="Perfil">
+            <div class="cartao">
+                <div class="cartao__cabecalho"><h2>Os meus dados</h2></div>
+                <div class="cartao__corpo">
+                    <div class="campo" style="margin-bottom: .9rem;">
+                        <label asp-for="Perfil.NomeCompleto">Nome completo</label>
+                        <input asp-for="Perfil.NomeCompleto" autocomplete="name" />
+                        <span asp-validation-for="Perfil.NomeCompleto"></span>
+                    </div>
+                    <div class="campo" style="margin-bottom: .9rem;">
+                        <label asp-for="Perfil.Telefone">Telefone</label>
+                        <input asp-for="Perfil.Telefone" type="tel" autocomplete="tel" />
+                        <span asp-validation-for="Perfil.Telefone"></span>
+                    </div>
+                    <div class="campo">
+                        <label class="etiqueta">E-mail</label>
+                        <input value="@Model.Email" disabled />
+                        <span class="campo__ajuda">Só um administrador pode alterar o e-mail de acesso.</span>
+                    </div>
+                </div>
+                <div class="cartao__rodape">
+                    <button type="submit" class="botao botao--primario">@Icones.Desenhar("guardar") Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-6">
+        <form method="post" asp-page-handler="PalavraPasse">
+            <div class="cartao">
+                <div class="cartao__cabecalho"><h2>Alterar palavra-passe</h2></div>
+                <div class="cartao__corpo">
+                    <div class="campo" style="margin-bottom: .9rem;">
+                        <label asp-for="Senha.Atual">Palavra-passe atual</label>
+                        <input asp-for="Senha.Atual" type="password" autocomplete="current-password" />
+                        <span asp-validation-for="Senha.Atual"></span>
+                    </div>
+                    <div class="campo" style="margin-bottom: .9rem;">
+                        <label asp-for="Senha.Nova">Nova palavra-passe</label>
+                        <input asp-for="Senha.Nova" type="password" autocomplete="new-password" />
+                        <span asp-validation-for="Senha.Nova"></span>
+                        <span class="campo__ajuda">Mínimo 10 caracteres, com maiúsculas, minúsculas e números.</span>
+                    </div>
+                    <div class="campo">
+                        <label asp-for="Senha.Confirmar">Confirmar nova palavra-passe</label>
+                        <input asp-for="Senha.Confirmar" type="password" autocomplete="new-password" />
+                        <span asp-validation-for="Senha.Confirmar"></span>
+                    </div>
+                </div>
+                <div class="cartao__rodape">
+                    <button type="submit" class="botao botao--primario">@Icones.Desenhar("chave") Alterar palavra-passe</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-12">
+        <div class="cartao">
+            <div class="cartao__cabecalho">
+                <h2>Os meus acessos</h2>
+                <div class="direita pequeno tenue">
+                    Último acesso: @(Model.UltimoAcesso.HasValue ? Formatos.DataHora(Model.UltimoAcesso, Relogio) : "este é o primeiro")
+                </div>
+            </div>
+            <div class="cartao__corpo">
+                <div class="detalhe">
+                    <div class="detalhe__item">
+                        <div class="detalhe__rotulo">Perfis</div>
+                        <div class="detalhe__valor">
+                            @if (Model.Perfis.Count == 0)
+                            {
+                                <span class="selo selo--aviso">Sem perfil atribuído</span>
+                            }
+                            else
+                            {
+                                @foreach (var perfil in Model.Perfis)
+                                {
+                                    <span class="selo selo--neutro">@perfil</span>
+                                }
+                            }
+                        </div>
+                    </div>
+                    <div class="detalhe__item">
+                        <div class="detalhe__rotulo">Permissões efetivas (@Model.PermissoesEfetivas.Count)</div>
+                        <div class="detalhe__valor pequeno">
+                            @if (Model.PermissoesEfetivas.Count == 0)
+                            {
+                                <span class="tenue">Nenhuma. Peça a um administrador para lhe atribuir um perfil.</span>
+                            }
+                            else
+                            {
+                                @string.Join(" · ", Model.PermissoesEfetivas)
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

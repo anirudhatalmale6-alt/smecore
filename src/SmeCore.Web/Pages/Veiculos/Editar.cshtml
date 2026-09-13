@@ -1,0 +1,171 @@
+@page "/veiculos/{id:guid}/editar"
+@model SmeCore.Web.Pages.Veiculos.EditarModel
+@{
+    ViewData["Titulo"] = Model.Novo ? "Novo veículo" : "Editar veículo";
+    ViewData["Subtitulo"] = Model.Novo ? null : Model.Dados.Matricula;
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>@(Model.Novo ? "Novo veículo" : "Editar veículo")</h1>
+        <p>Os campos marcados com <span class="obrigatorio">*</span> são obrigatórios.</p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="@(Model.Novo ? "/veiculos" : $"/veiculos/{Model.Id}")">
+            @Icones.Desenhar("regressar") Cancelar
+        </a>
+    </div>
+</div>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="mensagem mensagem--erro validation-summary-errors"></div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Identificação</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-3">
+                    <label asp-for="Dados.Matricula">Matrícula <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.Matricula" data-matricula="1" autocomplete="off"
+                           placeholder="AA-00-AA" autofocus />
+                    <span asp-validation-for="Dados.Matricula"></span>
+                    <span class="campo__ajuda">Aceita os quatro formatos portugueses.</span>
+                </div>
+
+                <div class="campo col-5">
+                    <label asp-for="Dados.Vin">VIN / N.º de chassis</label>
+                    <input asp-for="Dados.Vin" autocomplete="off" maxlength="17" class="mono" />
+                    <span asp-validation-for="Dados.Vin"></span>
+                    <span class="campo__ajuda">17 caracteres, sem as letras I, O e Q.</span>
+                </div>
+
+                <div class="campo col-4">
+                    <label asp-for="Dados.ClienteId">Cliente proprietário <span class="obrigatorio">*</span></label>
+
+                    @* O pedido vai sempre a /veiculos/novo porque é a mesma página: o handler
+                       só devolve as opções da caixa, filtradas pelo texto escrito. A seleção
+                       atual viaja no hx-include, para não se perder ao filtrar. *@
+                    <input type="search" name="termo" placeholder="Escrever para filtrar a lista…"
+                           aria-label="Pesquisar cliente"
+                           hx-get="/veiculos/novo?handler=Clientes"
+                           hx-trigger="keyup changed delay:350ms, search"
+                           hx-target="#Dados_ClienteId"
+                           hx-swap="innerHTML"
+                           hx-include="#Dados_ClienteId" />
+
+                    <select asp-for="Dados.ClienteId" size="1">
+                        <partial name="_OpcoesClientes" model="Model" />
+                    </select>
+                    <span asp-validation-for="Dados.ClienteId"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Características</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-3">
+                    <label asp-for="Dados.Marca">Marca <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.Marca" autocomplete="off" />
+                    <span asp-validation-for="Dados.Marca"></span>
+                </div>
+                <div class="campo col-3">
+                    <label asp-for="Dados.Modelo">Modelo <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.Modelo" autocomplete="off" />
+                    <span asp-validation-for="Dados.Modelo"></span>
+                </div>
+                <div class="campo col-3">
+                    <label asp-for="Dados.Versao">Versão</label>
+                    <input asp-for="Dados.Versao" autocomplete="off" placeholder="1.5 dCi Dynamique" />
+                    <span asp-validation-for="Dados.Versao"></span>
+                </div>
+                <div class="campo col-3">
+                    <label asp-for="Dados.Cor">Cor</label>
+                    <input asp-for="Dados.Cor" autocomplete="off" />
+                    <span asp-validation-for="Dados.Cor"></span>
+                </div>
+
+                <div class="campo col-2">
+                    <label asp-for="Dados.Ano">Ano</label>
+                    <input asp-for="Dados.Ano" type="number" min="1900" max="@Model.AnoMaximo" />
+                    <span asp-validation-for="Dados.Ano"></span>
+                </div>
+                <div class="campo col-3">
+                    <label asp-for="Dados.DataPrimeiraMatricula">Data da 1.ª matrícula</label>
+                    <input asp-for="Dados.DataPrimeiraMatricula" type="date" />
+                    <span asp-validation-for="Dados.DataPrimeiraMatricula"></span>
+                </div>
+                <div class="campo col-3">
+                    <label asp-for="Dados.Combustivel">Combustível</label>
+                    <select asp-for="Dados.Combustivel">
+                        @foreach (var valor in Enum.GetValues<TipoCombustivel>())
+                        {
+                            <option value="@((int)valor)">@Formatos.Enumeracao(valor)</option>
+                        }
+                    </select>
+                </div>
+                <div class="campo col-2">
+                    <label asp-for="Dados.Caixa">Caixa</label>
+                    <select asp-for="Dados.Caixa">
+                        @foreach (var valor in Enum.GetValues<TipoCaixa>())
+                        {
+                            <option value="@((int)valor)">@Formatos.Enumeracao(valor)</option>
+                        }
+                    </select>
+                </div>
+                <div class="campo col-2">
+                    <label asp-for="Dados.Cilindrada">Cilindrada (cm³)</label>
+                    <input asp-for="Dados.Cilindrada" type="number" min="0" max="10000" />
+                    <span asp-validation-for="Dados.Cilindrada"></span>
+                </div>
+                <div class="campo col-2">
+                    <label asp-for="Dados.Potencia">Potência (cv)</label>
+                    <input asp-for="Dados.Potencia" type="number" min="0" max="2000" />
+                    <span asp-validation-for="Dados.Potencia"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Utilização e inspeção</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-3">
+                    <label asp-for="Dados.Quilometragem">Quilometragem (km)</label>
+                    <input asp-for="Dados.Quilometragem" type="number" min="0" max="3000000" />
+                    <span asp-validation-for="Dados.Quilometragem"></span>
+                </div>
+                <div class="campo col-3">
+                    <label asp-for="Dados.ProximaInspecao">Próxima inspeção</label>
+                    <input asp-for="Dados.ProximaInspecao" type="date" />
+                    <span asp-validation-for="Dados.ProximaInspecao"></span>
+                    <span class="campo__ajuda">Usada no painel para alertar sobre inspeções em atraso.</span>
+                </div>
+                <div class="campo col-6">
+                    <label asp-for="Dados.Observacoes">Observações</label>
+                    <textarea asp-for="Dados.Observacoes" rows="3"></textarea>
+                    <span asp-validation-for="Dados.Observacoes"></span>
+                </div>
+                <div class="campo col-12">
+                    <label class="escolha">
+                        <input asp-for="Dados.Ativo" />
+                        <span>Veículo ativo</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="cartao__rodape">
+            <button type="submit" class="botao botao--primario">
+                @Icones.Desenhar("guardar") @(Model.Novo ? "Criar veículo" : "Guardar alterações")
+            </button>
+            <a class="botao botao--secundario" href="@(Model.Novo ? "/veiculos" : $"/veiculos/{Model.Id}")">Cancelar</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

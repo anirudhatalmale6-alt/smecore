@@ -1,0 +1,25 @@
+@{
+    var mensagem = TempData.Ler();
+}
+@if (mensagem is not null)
+{
+    var (tipo, texto) = mensagem.Value;
+    var classe = tipo switch
+    {
+        TipoMensagem.Sucesso => "mensagem--sucesso",
+        TipoMensagem.Erro => "mensagem--erro",
+        TipoMensagem.Aviso => "mensagem--aviso",
+        _ => "mensagem--informacao"
+    };
+    var icone = tipo switch
+    {
+        TipoMensagem.Sucesso => "ok",
+        TipoMensagem.Erro => "erro",
+        TipoMensagem.Aviso => "aviso",
+        _ => "info"
+    };
+    <div class="mensagem @classe" role="status">
+        @Icones.Desenhar(icone)
+        <div>@texto</div>
+    </div>
+}

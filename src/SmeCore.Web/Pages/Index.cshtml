@@ -1,0 +1,205 @@
+@page "/"
+@model SmeCore.Web.Pages.IndexModel
+@inject IRelogio Relogio
+@{
+    ViewData["Titulo"] = "Painel";
+    ViewData["Subtitulo"] = $"Situação em {Formatos.Data(Model.Hoje)}";
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>Painel</h1>
+        <p>Resumo dos registos e do que precisa de atenção esta semana.</p>
+    </div>
+    <div class="pagina__acoes">
+        @if (Model.PodeVerClientes)
+        {
+            <a class="botao botao--secundario" href="/clientes">@Icones.Desenhar("utilizadores") Clientes</a>
+        }
+        @if (Model.PodeVerVeiculos)
+        {
+            <a class="botao botao--secundario" href="/veiculos">@Icones.Desenhar("veiculo") Veículos</a>
+        }
+    </div>
+</div>
+
+<div class="estatisticas">
+    @if (Model.PodeVerClientes)
+    {
+        <div class="estatistica">
+            <span class="estatistica__rotulo">Clientes</span>
+            <span class="estatistica__valor">@Formatos.Inteiro(Model.TotalClientes)</span>
+            <span class="estatistica__nota">
+                @if (Model.ClientesInativos > 0)
+                {
+                    <text>@Model.ClientesInativos inativo(s)</text>
+                }
+                else
+                {
+                    <text>Todos ativos</text>
+                }
+            </span>
+        </div>
+    }
+
+    @if (Model.PodeVerVeiculos)
+    {
+        <div class="estatistica">
+            <span class="estatistica__rotulo">Veículos</span>
+            <span class="estatistica__valor">@Formatos.Inteiro(Model.TotalVeiculos)</span>
+            <span class="estatistica__nota">Registados e ativos</span>
+        </div>
+
+        <div class="estatistica @(Model.InspecoesVencidas > 0 ? "estatistica--alerta" : "")">
+            <span class="estatistica__rotulo">Inspeções vencidas</span>
+            <span class="estatistica__valor">@Formatos.Inteiro(Model.InspecoesVencidas)</span>
+            <span class="estatistica__nota">
+                @if (Model.InspecoesVencidas > 0)
+                {
+                    <a href="/veiculos?inspecaoVencida=true">Ver lista</a>
+                }
+                else
+                {
+                    <text>Nenhuma em atraso</text>
+                }
+            </span>
+        </div>
+
+        <div class="estatistica @(Model.InspecoesProximas > 0 ? "estatistica--aviso" : "")">
+            <span class="estatistica__rotulo">Inspeções a 30 dias</span>
+            <span class="estatistica__valor">@Formatos.Inteiro(Model.InspecoesProximas)</span>
+            <span class="estatistica__nota">
+                @if (Model.InspecoesProximas > 0)
+                {
+                    <a href="/veiculos?inspecaoProximosDias=30">Ver lista</a>
+                }
+                else
+                {
+                    <text>Nada agendado</text>
+                }
+            </span>
+        </div>
+    }
+</div>
+
+<div class="grelha">
+    @if (Model.PodeVerVeiculos)
+    {
+        <div class="col-8">
+            <div class="cartao">
+                <div class="cartao__cabecalho">
+                    <h2>Inspeções a tratar</h2>
+                    <div class="direita">
+                        <a class="botao botao--fantasma botao--pequeno" href="/veiculos?ordenar=inspecao&amp;direcao=asc">Ver todos</a>
+                    </div>
+                </div>
+
+                @if (Model.ProximasInspecoes.Count == 0)
+                {
+                    <div class="vazio">
+                        @Icones.Desenhar("ok", 38)
+                        <h3>Nada em atraso</h3>
+                        <p>Não há inspeções vencidas nem marcadas para os próximos 60 dias.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="tabela-envolvente">
+                        <table class="tabela tabela--compacta">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Matrícula</th>
+                                    <th scope="col">Veículo</th>
+                                    <th scope="col">Cliente</th>
+                                    <th scope="col">Inspeção</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var veiculo in Model.ProximasInspecoes)
+                                {
+                                    var vencida = veiculo.ProximaInspecao is not null && veiculo.ProximaInspecao < Model.Hoje;
+                                    <tr>
+                                        <td><a href="/veiculos/@veiculo.Id"><span class="matricula">@veiculo.Matricula</span></a></td>
+                                        <td class="secundario">@veiculo.Designacao</td>
+                                        <td class="secundario">
+                                            <a href="/clientes/@veiculo.ClienteId">@veiculo.ClienteNome</a>
+                                        </td>
+                                        <td>@Formatos.Data(veiculo.ProximaInspecao)</td>
+                                        <td>
+                                            <span class="selo @(vencida ? "selo--perigo" : "selo--aviso")">
+                                                @Formatos.PrazoRelativo(veiculo.ProximaInspecao, Model.Hoje)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.PodeVerClientes)
+    {
+        <div class="col-4">
+            <div class="cartao">
+                <div class="cartao__cabecalho">
+                    <h2>Últimos clientes</h2>
+                </div>
+                @if (Model.UltimosClientes.Count == 0)
+                {
+                    <div class="vazio">
+                        @Icones.Desenhar("caixa-vazia", 38)
+                        <h3>Sem clientes</h3>
+                        <p>Comece por registar o primeiro cliente.</p>
+                        <a class="botao botao--primario" href="/clientes/novo">@Icones.Desenhar("mais") Novo cliente</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="tabela-envolvente">
+                        <table class="tabela tabela--compacta">
+                            <tbody>
+                                @foreach (var cliente in Model.UltimosClientes)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a class="principal" href="/clientes/@cliente.Id">@cliente.Nome</a>
+                                            <div class="secundario">
+                                                @Formatos.Enumeracao(cliente.Tipo)
+                                                @if (cliente.TotalVeiculos > 0)
+                                                {
+                                                    <text>· @cliente.TotalVeiculos veículo(s)</text>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="numerico secundario">@Formatos.DataHora(cliente.CriadoEm, Relogio)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.PodeVerHistorico && Model.Atividade.Count > 0)
+    {
+        <div class="col-12">
+            <div class="cartao">
+                <div class="cartao__cabecalho">
+                    <h2>Atividade recente</h2>
+                    <div class="direita">
+                        <a class="botao botao--fantasma botao--pequeno" href="/historico">Ver histórico completo</a>
+                    </div>
+                </div>
+                <div class="cartao__corpo">
+                    <partial name="_Historico" model="Model.Atividade" />
+                </div>
+            </div>
+        </div>
+    }
+</div>

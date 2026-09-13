@@ -1,0 +1,18 @@
+@page "/erro/{codigo:int?}"
+@model SmeCore.Web.Pages.ErroModel
+@{
+    ViewData["Titulo"] = Model.Titulo;
+    Layout = "_LayoutEntrada";
+}
+
+<h1>@Model.Titulo</h1>
+<p class="sub">@Model.Descricao</p>
+
+@if (!string.IsNullOrWhiteSpace(Model.Identificador))
+{
+    <p class="pequeno tenue">
+        Referência para diagnóstico: <span class="mono">@Model.Identificador</span>
+    </p>
+}
+
+<a class="botao botao--primario" href="/">Voltar ao painel</a>

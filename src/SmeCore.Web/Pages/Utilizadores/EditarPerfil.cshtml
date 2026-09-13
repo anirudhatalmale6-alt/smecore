@@ -1,0 +1,91 @@
+@page "/perfis/{id:guid}/editar"
+@model SmeCore.Web.Pages.Utilizadores.EditarPerfilModel
+@{
+    ViewData["Titulo"] = Model.Novo ? "Novo perfil" : $"Perfil: {Model.Dados.Nome}";
+}
+
+<div class="pagina__cabecalho">
+    <div>
+        <h1>@(Model.Novo ? "Novo perfil" : $"Perfil: {Model.Dados.Nome}")</h1>
+        <p>Escolha as permissões que este perfil concede.</p>
+    </div>
+    <div class="pagina__acoes">
+        <a class="botao botao--secundario" href="/perfis">@Icones.Desenhar("regressar") Cancelar</a>
+    </div>
+</div>
+
+@if (Model.EhAdministrador)
+{
+    <div class="mensagem mensagem--informacao">
+        @Icones.Desenhar("info")
+        <div>
+            O perfil <strong>Administrador</strong> tem sempre acesso total, por desenho: é a garantia de que
+            nunca se fica sem forma de entrar na administração. As permissões abaixo não são editáveis.
+        </div>
+    </div>
+}
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="mensagem mensagem--erro validation-summary-errors"></div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho"><h2>Identificação</h2></div>
+        <div class="cartao__corpo">
+            <div class="grelha">
+                <div class="campo col-4">
+                    <label asp-for="Dados.Nome">Nome <span class="obrigatorio">*</span></label>
+                    <input asp-for="Dados.Nome" autocomplete="off" readonly="@Model.DeSistema" />
+                    <span asp-validation-for="Dados.Nome"></span>
+                    @if (Model.DeSistema)
+                    {
+                        <span class="campo__ajuda">Perfil de sistema: o nome não pode ser alterado.</span>
+                    }
+                </div>
+                <div class="campo col-8">
+                    <label asp-for="Dados.Descricao">Descrição</label>
+                    <input asp-for="Dados.Descricao" autocomplete="off" />
+                    <span asp-validation-for="Dados.Descricao"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao__cabecalho">
+            <h2>Permissões</h2>
+            <div class="direita pequeno tenue">@Permissoes.Todas.Count permissões disponíveis</div>
+        </div>
+        <div class="cartao__corpo">
+            <div class="permissoes">
+                @foreach (var modulo in Permissoes.Modulos)
+                {
+                    <div class="permissoes__modulo">
+                        <h3>@Icones.Desenhar(modulo.Icone, 15) @modulo.Nome</h3>
+                        @foreach (var permissao in modulo.Permissoes)
+                        {
+                            <label class="escolha">
+                                <input type="checkbox" name="Dados.Permissoes" value="@permissao.Chave"
+                                       checked="@(Model.EhAdministrador || Model.Dados.Permissoes.Contains(permissao.Chave))"
+                                       disabled="@Model.EhAdministrador" />
+                                <span>
+                                    @permissao.Titulo
+                                    <small>@permissao.Descricao</small>
+                                </span>
+                            </label>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="cartao__rodape">
+            <button type="submit" class="botao botao--primario">
+                @Icones.Desenhar("guardar") @(Model.Novo ? "Criar perfil" : "Guardar alterações")
+            </button>
+            <a class="botao botao--secundario" href="/perfis">Cancelar</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
