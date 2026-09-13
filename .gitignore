@@ -1,0 +1,27 @@
+# Compilação
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+*.userprefs
+
+# Ambientes de desenvolvimento
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Configuração local e segredos — nunca versionar
+appsettings.Local.json
+appsettings.*.Local.json
+.env
+.local/
+*.pfx
+
+# Ficheiros de trabalho
+capturas/
+TestResults/
