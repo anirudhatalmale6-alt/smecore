@@ -1,0 +1,70 @@
+# Especificação para a DigitalOcean App Platform.
+#
+# Utilização:
+#   doctl apps create --spec .do/app.yaml
+#   doctl apps update <APP_ID> --spec .do/app.yaml
+#
+# Os segredos (palavra-passe do administrador inicial) NÃO ficam neste ficheiro: são definidos
+# no painel da DigitalOcean como variáveis do tipo SECRET, ou com
+#   doctl apps update <APP_ID> --spec ... e o valor marcado como EV[1:...]
+name: smecore
+region: fra
+
+services:
+  - name: web
+    dockerfile_path: Dockerfile
+    source_dir: /
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 8080
+
+    # Preencher com o repositório da organização depois da transferência.
+    github:
+      repo: ORGANIZACAO/smecore
+      branch: main
+      deploy_on_push: true
+
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 40
+      period_seconds: 30
+      timeout_seconds: 5
+      failure_threshold: 3
+
+    envs:
+      - key: ASPNETCORE_ENVIRONMENT
+        scope: RUN_TIME
+        value: Production
+
+      # A App Platform injeta a ligação da base de dados gerida nesta forma.
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+
+      # Conta inicial. Definir a palavra-passe como SECRET no painel, nunca aqui.
+      - key: Administrador__Email
+        scope: RUN_TIME
+        value: admin@exemplo.pt
+      - key: Administrador__Nome
+        scope: RUN_TIME
+        value: Administrador
+      - key: Administrador__PalavraPasse
+        scope: RUN_TIME
+        type: SECRET
+        value: DEFINIR_NO_PAINEL
+
+      # As migrações são aplicadas no arranque. Pôr a false quando forem aplicadas
+      # por um job separado.
+      - key: BaseDados__MigrarNoArranque
+        scope: RUN_TIME
+        value: "true"
+
+      - key: Seed__DadosDemonstracao
+        scope: RUN_TIME
+        value: "false"
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: false   # passar a true (cluster dedicado) quando entrar em produção real
