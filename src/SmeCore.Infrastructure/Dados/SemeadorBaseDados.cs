@@ -202,23 +202,23 @@ public class SemeadorBaseDados
             "Braga", "Guimarães", "Porto", "Barcelos", "Famalicão", "Viana do Castelo", "Fafe", "Póvoa de Varzim"
         };
 
-        var modelos = new (string Marca, string Modelo, string Versao, TipoCombustivel Combustivel, int Cilindrada, int Potencia)[]
+        var modelos = new (string Marca, string Modelo, string Versao, TipoCombustivel Combustivel, int Cilindrada, int Potencia, int DesdeAno)[]
         {
-            ("Renault", "Clio", "1.5 dCi Dynamique", TipoCombustivel.Gasoleo, 1461, 90),
-            ("Renault", "Mégane", "1.3 TCe Intens", TipoCombustivel.Gasolina, 1332, 140),
-            ("Peugeot", "208", "1.2 PureTech Allure", TipoCombustivel.Gasolina, 1199, 100),
-            ("Peugeot", "3008", "1.5 BlueHDi GT Line", TipoCombustivel.Gasoleo, 1499, 130),
-            ("Volkswagen", "Golf", "2.0 TDI Confortline", TipoCombustivel.Gasoleo, 1968, 150),
-            ("Volkswagen", "Polo", "1.0 TSI Highline", TipoCombustivel.Gasolina, 999, 95),
-            ("Mercedes-Benz", "Sprinter", "314 CDI", TipoCombustivel.Gasoleo, 2143, 143),
-            ("Toyota", "Corolla", "1.8 Hybrid Comfort", TipoCombustivel.HibridoGasolina, 1798, 122),
-            ("Nissan", "Qashqai", "1.3 DIG-T N-Connecta", TipoCombustivel.Gasolina, 1332, 140),
-            ("BMW", "Série 3", "320d Pack M", TipoCombustivel.Gasoleo, 1995, 190),
-            ("Tesla", "Model 3", "Long Range AWD", TipoCombustivel.Eletrico, 0, 440),
-            ("Fiat", "Ducato", "2.3 MultiJet 35 L4H2", TipoCombustivel.Gasoleo, 2287, 140),
-            ("Opel", "Corsa", "1.2 Edition", TipoCombustivel.Gasolina, 1199, 75),
-            ("Citroën", "Berlingo", "1.5 BlueHDi Van", TipoCombustivel.Gasoleo, 1499, 100),
-            ("Dacia", "Duster", "1.0 TCe GPL Comfort", TipoCombustivel.Gpl, 999, 100)
+            ("Renault", "Clio", "1.5 dCi Dynamique", TipoCombustivel.Gasoleo, 1461, 90, 2005),
+            ("Renault", "Mégane", "1.3 TCe Intens", TipoCombustivel.Gasolina, 1332, 140, 2018),
+            ("Peugeot", "208", "1.2 PureTech Allure", TipoCombustivel.Gasolina, 1199, 100, 2012),
+            ("Peugeot", "3008", "1.5 BlueHDi GT Line", TipoCombustivel.Gasoleo, 1499, 130, 2017),
+            ("Volkswagen", "Golf", "2.0 TDI Confortline", TipoCombustivel.Gasoleo, 1968, 150, 2008),
+            ("Volkswagen", "Polo", "1.0 TSI Highline", TipoCombustivel.Gasolina, 999, 95, 2015),
+            ("Mercedes-Benz", "Sprinter", "314 CDI", TipoCombustivel.Gasoleo, 2143, 143, 2014),
+            ("Toyota", "Corolla", "1.8 Hybrid Comfort", TipoCombustivel.HibridoGasolina, 1798, 122, 2019),
+            ("Nissan", "Qashqai", "1.3 DIG-T N-Connecta", TipoCombustivel.Gasolina, 1332, 140, 2019),
+            ("BMW", "Série 3", "320d Pack M", TipoCombustivel.Gasoleo, 1995, 190, 2012),
+            ("Tesla", "Model 3", "Long Range AWD", TipoCombustivel.Eletrico, 0, 440, 2019),
+            ("Fiat", "Ducato", "2.3 MultiJet 35 L4H2", TipoCombustivel.Gasoleo, 2287, 140, 2010),
+            ("Opel", "Corsa", "1.2 Edition", TipoCombustivel.Gasolina, 1199, 75, 2007),
+            ("Citroën", "Berlingo", "1.5 BlueHDi Van", TipoCombustivel.Gasoleo, 1499, 100, 2018),
+            ("Dacia", "Duster", "1.0 TCe GPL Comfort", TipoCombustivel.Gpl, 999, 100, 2020)
         };
 
         var cores = new[] { "Branco", "Cinzento", "Preto", "Azul-escuro", "Vermelho", "Prata" };
@@ -297,7 +297,10 @@ public class SemeadorBaseDados
             for (var v = 0; v < quantos; v++)
             {
                 var modelo = modelos[aleatorio.Next(modelos.Length)];
-                var ano = aleatorio.Next(2005, hoje.Year + 1);
+
+                // O ano nunca é anterior ao lançamento do modelo: um "Tesla Model 3 de 2006"
+                // faria qualquer pessoa duvidar do resto dos dados.
+                var ano = aleatorio.Next(modelo.DesdeAno, hoje.Year + 1);
 
                 string matricula;
                 do
